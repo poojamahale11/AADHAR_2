@@ -265,3 +265,82 @@ exports.getFeedback = async (req, res) => {
 
   res.render('donor/feedback', { title: 'Feedback Received', feedbackList });
 };
+
+
+// ---------------------------------------------------------------------------
+// Delivery History - Complete details with feedback
+// ---------------------------------------------------------------------------
+exports.getDeliveryHistory = async (req, res) => {
+  const { getDonorDeliveryHistory } = require('../utils/donorNotifications');
+  
+  const deliveryHistory = await getDonorDeliveryHistory(req.user._id);
+  
+  res.render('donor/delivery-history', {
+    title: 'Delivery History',
+    deliveryHistory,
+    totalDeliveries: deliveryHistory.length,
+  });
+};
+
+// ---------------------------------------------------------------------------
+// Single Delivery Detail - Complete feedback and media
+// ---------------------------------------------------------------------------
+exports.getDeliveryDetail = async (req, res) => {
+  const donation = await Donation.findOne({ 
+    _id: req.params.id, 
+    donorId: req.user._id,
+    status: 'delivered'
+  })
+    .populate('assignedVolunteerId', 'name phone avgRating completedTasks')
+    .populate('ngoId', 'organizationName');
+
+  if (!donation) {
+    return res.status(404).render('error', { 
+      title: 'Not found', 
+      message: "We couldn't find that delivered donation." 
+    });
+  }
+
+  const Task = require('../models/Task');
+  const task = await Task.findOne({ donationId: donation._id })
+    .populate('beneficiaryId', 'name partnerName phone homeAddress');
+
+  const feedback = await Feedback.findOne({ donationId: donation._id, visibleToDonor: true })
+    .populate('submittedByVolunteerId', 'name phone');
+
+  // Mark feedback as viewed by donor
+  if (feedback && !feedback.donorViewedAt) {
+    feedback.donorViewedAt = new Date();
+    await feedback.save();
+  }
+
+  // Determine recipient info
+  let recipientName = 'Unknown';
+  let recipientType = 'Other';
+  let recipientAddress = task?.deliveryLocation?.address || 'Unknown';
+
+  if (donation.recipientType === 'elderly_couple' && task?.beneficiaryId) {
+    const b = task.beneficiaryId;
+    recipientName = b.partnerName ? `${b.name} & ${b.partnerName}` : b.name;
+    recipientType = 'Elderly Couple';
+    recipientAddress = b.homeAddress || recipientAddress;
+  } else if (donation.recipientType === 'other_needy' && donation.customRecipient) {
+    recipientName = donation.customRecipient.name;
+    recipientType = 'Community Service';
+    recipientAddress = donation.customRecipient.address || recipientAddress;
+  } else if (task?.customRecipient?.name) {
+    recipientName = task.customRecipient.name;
+    recipientType = 'Community Service';
+  }
+
+  res.render('donor/delivery-detail', {
+    title: `Delivery - ${donation.donationCode}`,
+    donation,
+    task,
+    feedback,
+    recipientName,
+    recipientType,
+    recipientAddress,
+    deliveredAt: task?.deliveredAt || donation.updatedAt,
+  });
+};

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('../partials/head', { title: 'Complete Management System' }) %>
+<body>
+  <%- include('../partials/navbar') %>
+  <main class="container management-center">
+    
+    <!-- Page Header -->
+    <div class="page-header">
+      <div>
+        <h1>🎯 Complete Management System</h1>
+        <p class="muted">Real-time tracking: Donor → Donation → Volunteer → Elderly Couple → Delivery</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-outline" onclick="window.print()">📄 Print Report</button>
+        <a href="/admin/dashboard" class="btn btn-outline">← Back to Dashboard</a>
+      </div>
+    </div>
+
+    <!-- Comprehensive Stats Grid -->
+    <div class="stats-overview">
+      <div class="stat-card primary">
+        <div class="stat-icon">📦</div>
+        <div class="stat-content">
+          <div class="stat-value"><%= stats.totalDonations %></div>
+          <div class="stat-label">Total Donations</div>
+          <div class="stat-breakdown">
+            <span class="badge badge-warning"><%= stats.pendingDonations %> pending</span>
+            <span class="badge badge-info"><%= stats.assignedDonations %> assigned</span>
+            <span class="badge badge-success"><%= stats.deliveredDonations %> delivered</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card secondary">
+        <div class="stat-icon">🍛</div>
+        <div class="stat-content">
+          <div class="stat-value"><%= stats.totalFoodRequests %></div>
+          <div class="stat-label">Food Requests</div>
+          <div class="stat-breakdown">
+            <span class="badge badge-warning"><%= stats.pendingFoodRequests %> pending</span>
+            <span class="badge badge-info"><%= stats.assignedFoodRequests %> assigned</span>
+            <span class="badge badge-success"><%= stats.deliveredFoodRequests %> delivered</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card accent">
+        <div class="stat-icon">🚚</div>
+        <div class="stat-content">
+          <div class="stat-value"><%= stats.activeDeliveries %></div>
+          <div class="stat-label">Active Deliveries</div>
+          <div class="stat-meta"><%= stats.completedToday %> completed today</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">🧑‍🤝‍🧑</div>
+        <div class="stat-content">
+          <div class="stat-value"><%= stats.totalVolunteers %></div>
+          <div class="stat-label">Active Volunteers</div>
+        </div>
+      </div>
+
+      <div class="stat-card highlight">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-content">
+          <div class="stat-value"><%= stats.regularDonors %></div>
+          <div class="stat-label">Regular Donors</div>
+          <div class="stat-meta">3+ donations</div>
+        </div>
+      </div>
+
+      <div class="stat-card highlight">
+        <div class="stat-icon">👵</div>
+        <div class="stat-content">
+          <div class="stat-value"><%= stats.regularElderlyUsers %></div>
+          <div class="stat-label">Frequent Requesters</div>
+          <div class="stat-meta">3+ requests</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Sections -->
+    <div class="management-grid">
+      
+      <!-- LEFT COLUMN: Donations & Food Requests -->
+      <div class="management-column">
+        
+        <!-- ALL DONATIONS SECTION -->
+        <%- include('./partials/management-donations', { donations, volunteers }) %>
+
+        <!-- ALL FOOD REQUESTS SECTION -->
+        <%- include('./partials/management-food-requests', { foodRequests, volunteers, donations }) %>
+
+      </div>
+
+      <!-- RIGHT COLUMN: Active Deliveries & History -->
+      <div class="management-column">
+        
+        <!-- ACTIVE DELIVERIES SECTION -->
+        <%- include('./partials/management-active-deliveries', { activeDeliveries }) %>
+
+        <!-- REGULAR USERS PANELS -->
+        <%- include('./partials/management-regular-users', { donorStats, elderlyStats }) %>
+
+        <!-- COMPLETE HISTORY SECTION -->
+        <%- include('./partials/management-history', { historyItems }) %>
+
+      </div>
+
+    </div>
+
+  </main>
+  <%- include('../partials/footer') %>
+
+  <style>
+    .management-center {
+      padding: var(--space-xl) 0;
+      max-width: 1600px;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: var(--space-lg);
+      gap: var(--space-md);
+      flex-wrap: wrap;
+    }
+
+    .page-header h1 {
+      font-size: clamp(1.8rem, 3vw, 2.5rem);
+      margin-bottom: var(--space-xs);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+
+    /* Stats Overview */
+    .stats-overview {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: var(--space-md);
+      margin-bottom: var(--space-xl);
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition-fast);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .stat-card.primary {
+      border-color: #3b82f6;
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    }
+
+    .stat-card.secondary {
+      border-color: #10b981;
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    }
+
+    .stat-card.accent {
+      border-color: #f59e0b;
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    }
+
+    .stat-card.highlight {
+      border-color: #8b5cf6;
+      background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+    }
+
+    .stat-icon {
+      font-size: 2.5rem;
+      flex-shrink: 0;
+    }
+
+    .stat-content {
+      flex: 1;
+    }
+
+    .stat-value {
+      font-size: var(--fs-display-md);
+      font-weight: 700;
+      color: var(--color-ink);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: var(--fs-body-sm);
+      font-weight: 600;
+      color: var(--color-muted);
+      margin-top: var(--space-xs);
+    }
+
+    .stat-breakdown {
+      display: flex;
+      gap: var(--space-xs);
+      margin-top: var(--space-sm);
+      flex-wrap: wrap;
+    }
+
+    .stat-meta {
+      font-size: var(--fs-body-xs);
+      color: var(--color-muted);
+      margin-top: var(--space-xs);
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      padding: 0.2em 0.6em;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge-warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .badge-info {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .badge-success {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge-danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    /* Management Grid Layout */
+    .management-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-xl);
+    }
+
+    .management-column {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xl);
+    }
+
+    /* Section Cards */
+    .section-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-md);
+      padding-bottom: var(--space-md);
+      border-bottom: 2px solid var(--color-border);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-size: var(--fs-heading-sm);
+      font-weight: 700;
+      color: var(--color-ink);
+    }
+
+    .section-title .icon {
+      font-size: 1.5rem;
+    }
+
+    .section-count {
+      background: var(--color-primary);
+      color: white;
+      padding: 0.2em 0.6em;
+      border-radius: var(--radius-full);
+      font-size: var(--fs-body-sm);
+      font-weight: 700;
+    }
+
+    .section-actions {
+      display: flex;
+      gap: var(--space-sm);
+      align-items: center;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .management-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .stats-overview {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stats-overview {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      .header-actions, .navbar, footer {
+        display: none;
+      }
+      .management-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+  <script>
+    // Auto-refresh every 30 seconds for real-time updates
+    setTimeout(() => {
+      location.reload();
+    }, 30000);
+  </script>
+
+</body>
+</html>

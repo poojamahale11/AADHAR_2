@@ -1,0 +1,245 @@
+<div class="tab-content">
+  <div class="section-header">
+    <h2>🚚 Active Deliveries</h2>
+    <p class="muted">Track all ongoing deliveries in real-time</p>
+  </div>
+
+  <% if (activeTasks.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">😴</div>
+      <h3>No active deliveries</h3>
+      <p>All deliveries are complete or waiting to be assigned.</p>
+    </div>
+  <% } else { %>
+    <div class="delivery-list">
+      <% activeTasks.forEach(task => { %>
+        <div class="delivery-card">
+          <div class="delivery-header">
+            <div class="delivery-flow">
+              <% if (task.donationId) { %>
+                <div class="flow-step">
+                  <div class="flow-icon">👤</div>
+                  <div class="flow-label">Donor</div>
+                  <div class="flow-value"><%= task.donationId.donorId ? task.donationId.donorId.name : 'N/A' %></div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                  <div class="flow-icon">📦</div>
+                  <div class="flow-label">Donation</div>
+                  <div class="flow-value"><%= task.donationId.donationCode %></div>
+                </div>
+              <% } else if (task.foodRequestId) { %>
+                <div class="flow-step">
+                  <div class="flow-icon">👴</div>
+                  <div class="flow-label">Elderly</div>
+                  <div class="flow-value"><%= task.beneficiaryId ? task.beneficiaryId.name : 'N/A' %></div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                  <div class="flow-icon">🍛</div>
+                  <div class="flow-label">Food Request</div>
+                  <div class="flow-value"><%= task.foodRequestId.numberOfPeople || 2 %> <%= task.foodRequestId.foodPreference === 'veg' ? 'Veg' : 'Non-Veg' %></div>
+                </div>
+              <% } %>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">
+                <div class="flow-icon">🚲</div>
+                <div class="flow-label">Volunteer</div>
+                <div class="flow-value"><%= task.volunteerId ? task.volunteerId.name : 'Unassigned' %></div>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">
+                <div class="flow-icon">🏠</div>
+                <div class="flow-label">Receiver</div>
+                <div class="flow-value"><%= task.beneficiaryId ? task.beneficiaryId.name : 'NGO' %></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="delivery-status">
+            <div class="status-timeline">
+              <div class="status-step <%= ['assigned', 'accepted', 'pickup_reached', 'picked', 'in_transit', 'delivered'].includes(task.status) ? 'completed' : '' %>">
+                <div class="status-dot"></div>
+                <div class="status-label">Assigned</div>
+              </div>
+              <div class="status-line <%= ['accepted', 'pickup_reached', 'picked', 'in_transit', 'delivered'].includes(task.status) ? 'completed' : '' %>"></div>
+              <div class="status-step <%= ['accepted', 'pickup_reached', 'picked', 'in_transit', 'delivered'].includes(task.status) ? 'completed' : '' %>">
+                <div class="status-dot"></div>
+                <div class="status-label">Accepted</div>
+              </div>
+              <div class="status-line <%= ['pickup_reached', 'picked', 'in_transit', 'delivered'].includes(task.status) ? 'completed' : '' %>"></div>
+              <div class="status-step <%= ['pickup_reached', 'picked', 'in_transit', 'delivered'].includes(task.status) ? 'completed' : '' %>">
+                <div class="status-dot"></div>
+                <div class="status-label">Pickup</div>
+              </div>
+              <div class="status-line <%= ['in_transit', 'delivered'].includes(task.status) ? 'completed' : '' %>"></div>
+              <div class="status-step <%= ['in_transit', 'delivered'].includes(task.status) ? 'completed' : '' %>">
+                <div class="status-dot"></div>
+                <div class="status-label">In Transit</div>
+              </div>
+              <div class="status-line <%= task.status === 'delivered' ? 'completed' : '' %>"></div>
+              <div class="status-step <%= task.status === 'delivered' ? 'completed' : '' %>">
+                <div class="status-dot"></div>
+                <div class="status-label">Delivered</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="delivery-details">
+            <div class="detail-col">
+              <div class="detail-label">Current Status:</div>
+              <div class="detail-value">
+                <span class="pill pill-<%= task.status %>"><%= task.status.replace('_', ' ').toUpperCase() %></span>
+              </div>
+            </div>
+            <% if (task.donationId) { %>
+              <div class="detail-col">
+                <div class="detail-label">Pickup Address:</div>
+                <div class="detail-value"><%= task.donationId.pickupLocation.address %></div>
+              </div>
+            <% } %>
+            <div class="detail-col">
+              <div class="detail-label">Delivery Address:</div>
+              <div class="detail-value"><%= task.deliveryLocation.address %></div>
+            </div>
+            <div class="detail-col">
+              <div class="detail-label">Volunteer Contact:</div>
+              <div class="detail-value"><%= task.volunteerId ? task.volunteerId.phone : 'N/A' %></div>
+            </div>
+          </div>
+
+          <div class="delivery-actions">
+            <a href="/admin/tasks/<%= task._id %>" class="btn btn-outline btn-sm">View Full Details</a>
+            <% if (task.volunteerId) { %>
+              <a href="/admin/volunteers/<%= task.volunteerId._id %>" class="btn btn-outline btn-sm">View Volunteer</a>
+            <% } %>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+</div>
+
+<style>
+  .delivery-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+  .delivery-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    box-shadow: var(--shadow-md);
+  }
+  .delivery-flow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-xl);
+  }
+  .flow-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-md);
+    background: var(--color-surface-alt);
+    border-radius: var(--radius-md);
+    min-width: 120px;
+  }
+  .flow-icon {
+    font-size: 1.5rem;
+  }
+  .flow-label {
+    font-size: var(--fs-caption);
+    color: var(--color-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .flow-value {
+    font-size: var(--fs-body-sm);
+    font-weight: 700;
+    color: var(--color-ink);
+    text-align: center;
+  }
+  .flow-arrow {
+    font-size: 1.5rem;
+    color: var(--color-muted);
+  }
+  .delivery-status {
+    margin-bottom: var(--space-xl);
+  }
+  .status-timeline {
+    display: flex;
+    align-items: center;
+    padding: var(--space-lg);
+    background: var(--color-surface-alt);
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+  }
+  .status-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    flex-shrink: 0;
+  }
+  .status-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--color-border);
+    border: 3px solid var(--color-surface);
+    transition: all var(--transition-fast);
+  }
+  .status-step.completed .status-dot {
+    background: var(--color-success);
+    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2);
+  }
+  .status-line {
+    height: 3px;
+    flex: 1;
+    background: var(--color-border);
+    transition: all var(--transition-fast);
+  }
+  .status-line.completed {
+    background: var(--color-success);
+  }
+  .status-label {
+    font-size: var(--fs-caption);
+    color: var(--color-muted);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .status-step.completed .status-label {
+    color: var(--color-success);
+  }
+  .delivery-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+  }
+  .detail-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+  .detail-label {
+    font-size: var(--fs-body-sm);
+    color: var(--color-muted);
+    font-weight: 600;
+  }
+  .detail-value {
+    font-size: var(--fs-body);
+    color: var(--color-ink);
+  }
+  .delivery-actions {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+  }
+</style>

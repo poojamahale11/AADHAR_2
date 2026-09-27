@@ -30,10 +30,11 @@
         <% } else if (currentUser.role === 'elderly') { %>
           <a href="/elderly/requests/new" class="nav-link">Request food</a>
         <% } %>
-        <div class="user-profile-pill">
+        <a href="/profile" class="user-profile-pill" title="Edit Profile & Personal Info">
           <span class="avatar-dot"></span>
           <span class="site-navbar-user"><%= currentUser.name %></span>
-        </div>
+          <span style="font-size: 0.8rem; color: var(--color-primary); margin-left: 0.15rem;">✏️</span>
+        </a>
         <form action="/logout" method="POST" class="inline-form">
           <button type="submit" class="btn btn-outline btn-sm">Log out</button>
         </form>
@@ -115,6 +116,14 @@
     font-weight: 700;
     box-shadow: var(--shadow-sm);
     color: var(--color-ink);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+  }
+  .user-profile-pill:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
   }
   .avatar-dot {
     width: 8px;

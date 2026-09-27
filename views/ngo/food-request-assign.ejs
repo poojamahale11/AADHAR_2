@@ -5,29 +5,49 @@
   <%- include('../partials/navbar') %>
   <main class="container form-page">
     <div class="form-page-head">
-      <h1>Arrange food delivery</h1>
-      <p class="muted">For <%= request.householdId.name %> · <%= request.householdId.phone %></p>
+      <h1>Arrange Food Delivery</h1>
+      <p class="muted">For <%= request.householdId.name %> · 📞 <%= request.householdId.phone %></p>
     </div>
     <section class="card">
-      <h2>Household request</h2>
-      <p><strong>Food needed:</strong> <%= request.requirements %></p>
-      <p class="muted mb-0"><strong>Deliver to:</strong> <%= request.deliveryAddress %></p>
-      <% if (request.deliveryNote) { %><p class="muted"><strong>Note:</strong> <%= request.deliveryNote %></p><% } %>
+      <h2>Household Request Details</h2>
+      <p><strong>Food Needed:</strong> <%= request.requirements %></p>
+      <p class="muted mb-0"><strong>Delivery Address:</strong> <%= request.deliveryAddress %></p>
+      <% if (request.deliveryNote) { %><p class="muted mt-xs"><strong>Note:</strong> <%= request.deliveryNote %></p><% } %>
     </section>
     <form method="POST" action="/admin/food-requests/<%= request._id %>/assign" class="card mt-lg">
-      <h2>Choose a volunteer</h2>
+      <h2>Choose a Volunteer</h2>
       <% if (volunteers.length === 0) { %>
-        <p class="muted">No approved volunteers are available. Approve or reactivate a volunteer before assigning this request.</p>
+        <p class="muted">No approved volunteers are registered. Approve a volunteer before assigning this request.</p>
       <% } else { %>
         <div class="volunteer-picker">
           <% volunteers.forEach((volunteer, index) => { %>
-            <label class="volunteer-option">
+            <label class="volunteer-option <%= volunteer.liveStatus === 'busy' ? 'opt-busy' : '' %>">
               <input type="radio" name="volunteerId" value="<%= volunteer._id %>" <%= index === 0 ? 'checked' : '' %> required>
-              <span><strong><%= volunteer.name %></strong> · <span class="muted"><%= volunteer.phone %></span></span>
+              <div style="flex: 1;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.3rem;">
+                  <div>
+                    <strong><%= volunteer.name %></strong>
+                    <span class="muted"> · <%= volunteer.phone %></span>
+                    <% if (volunteer.avgRating > 0) { %><span class="muted"> · ⭐ <%= volunteer.avgRating.toFixed(1) %></span><% } %>
+                  </div>
+                  <span class="pill <%= volunteer.statusBadgeClass %>" style="font-size: 0.75rem;">
+                    <%= volunteer.liveStatusLabel %>
+                  </span>
+                </div>
+                <div style="font-size: var(--fs-caption); margin-top: 0.25rem; color: var(--color-ink-soft);">
+                  <span>🗓️ <%= volunteer.scheduleDateText %></span>
+                  &nbsp;·&nbsp;
+                  <span>🕒 <%= volunteer.timeWindowText %></span>
+                  &nbsp;·&nbsp;
+                  <span class="<%= volunteer.liveStatus === 'busy' ? 'text-warning' : 'text-success' %>" style="font-weight: 600;">
+                    <%= volunteer.whenFreeText %>
+                  </span>
+                </div>
+              </div>
             </label>
           <% }) %>
         </div>
-        <button type="submit" class="btn btn-primary btn-block mt-lg">Assign delivery</button>
+        <button type="submit" class="btn btn-primary btn-block mt-lg">Assign Delivery</button>
       <% } %>
     </form>
   </main>
@@ -37,6 +57,8 @@
     .volunteer-picker { display: flex; flex-direction: column; gap: var(--space-sm); }
     .volunteer-option { display: flex; align-items: center; gap: var(--space-sm); border: 1.5px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-sm) var(--space-md); cursor: pointer; }
     .volunteer-option:has(input:checked) { border-color: var(--color-primary); background: var(--color-primary-tint); }
+    .text-warning { color: #c2410c !important; }
+    .text-success { color: #15803d !important; }
   </style>
 </body>
 </html>

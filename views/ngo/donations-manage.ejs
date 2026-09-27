@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('../partials/head', { title: 'Manage Donations & Food Requests' }) %>
+<body>
+  <%- include('../partials/navbar') %>
+  <main class="container admin-manage-page">
+    
+    <div class="page-header">
+      <div>
+        <h1>🎁 Donations & Food Requests Management</h1>
+        <p class="muted">Complete tracking from donor to delivery</p>
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📦</div>
+        <div class="stat-value"><%= stats.pendingDonations %></div>
+        <div class="stat-label">Pending Donations</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🍛</div>
+        <div class="stat-value"><%= stats.pendingFoodRequests %></div>
+        <div class="stat-label">Pending Food Requests</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🚚</div>
+        <div class="stat-value"><%= stats.activeDeliveries %></div>
+        <div class="stat-label">Active Deliveries</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value"><%= stats.completedToday %></div>
+        <div class="stat-label">Completed Today</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-container">
+      <div class="tabs">
+        <a href="?tab=donations" class="tab <%= activeTab === 'donations' ? 'active' : '' %>">Donations</a>
+        <a href="?tab=food-requests" class="tab <%= activeTab === 'food-requests' ? 'active' : '' %>">Food Requests</a>
+        <a href="?tab=active-deliveries" class="tab <%= activeTab === 'active-deliveries' ? 'active' : '' %>">Active Deliveries</a>
+        <a href="?tab=history" class="tab <%= activeTab === 'history' ? 'active' : '' %>">Complete History</a>
+      </div>
+    </div>
+
+    <% if (activeTab === 'donations') { %>
+      <%- include('./partials/donations-tab', { donations, volunteers }) %>
+    <% } else if (activeTab === 'food-requests') { %>
+      <%- include('./partials/food-requests-tab', { foodRequests, volunteers, donations }) %>
+    <% } else if (activeTab === 'active-deliveries') { %>
+      <%- include('./partials/active-deliveries-tab', { activeTasks }) %>
+    <% } else if (activeTab === 'history') { %>
+      <%- include('./partials/history-tab', { completedItems }) %>
+    <% } %>
+
+  </main>
+  <%- include('../partials/footer') %>
+
+  <style>
+    .admin-manage-page {
+      padding: var(--space-xl) 0;
+      max-width: 1400px;
+    }
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--space-xl);
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: var(--space-md);
+      margin-bottom: var(--space-xl);
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #ffffff 0%, #fffaf5 100%);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-icon {
+      font-size: 2rem;
+      margin-bottom: var(--space-xs);
+    }
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      font-family: var(--font-display);
+    }
+    .stat-label {
+      color: var(--color-muted);
+      font-size: var(--fs-body-sm);
+      font-weight: 600;
+    }
+    .tabs-container {
+      margin-bottom: var(--space-xl);
+    }
+    .tabs {
+      display: flex;
+      gap: var(--space-xs);
+      border-bottom: 2px solid var(--color-border);
+      overflow-x: auto;
+    }
+    .tab {
+      padding: var(--space-sm) var(--space-lg);
+      color: var(--color-muted);
+      font-weight: 600;
+      text-decoration: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+    .tab:hover {
+      color: var(--color-ink);
+      background: var(--color-surface-alt);
+    }
+    .tab.active {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+    }
+  </style>
+</body>
+</html>

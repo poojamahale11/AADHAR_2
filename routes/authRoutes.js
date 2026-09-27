@@ -3,7 +3,9 @@ const router = express.Router();
 
 const authController = require('../controllers/authController');
 const { signupValidators, loginValidators, handleValidationErrors } = require('../middleware/validators');
-const { authLimiter } = require('../middleware/rateLimiters');
+const { authLimiter, passwordResetLimiter } = require('../middleware/rateLimiters');
+const { requireAuth } = require('../middleware/auth');
+const asyncHandler = require('../utils/asyncHandler');
 
 router.get('/signup', authController.getSignup);
 router.post('/signup', authLimiter, signupValidators, handleValidationErrors, authController.postSignup);
@@ -15,5 +17,15 @@ router.post('/admin/login', authLimiter, loginValidators, handleValidationErrors
 
 router.post('/logout', authController.logout);
 router.get('/logout', authController.logout); // convenience for a simple <a> link
+
+// Password Reset (Forgot Password)
+router.get('/forgot-password', authController.getForgotPassword);
+router.post('/forgot-password', passwordResetLimiter, authLimiter, handleValidationErrors, authController.postForgotPassword);
+router.get('/reset-password', authController.getResetPassword);
+router.post('/reset-password', passwordResetLimiter, authLimiter, handleValidationErrors, authController.postResetPassword);
+
+// Profile & Personal Information Management
+router.get('/profile', requireAuth, asyncHandler(authController.getProfile));
+router.post('/profile', requireAuth, asyncHandler(authController.postUpdateProfile));
 
 module.exports = router;

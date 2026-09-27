@@ -11,130 +11,210 @@
             <span class="eyebrow" style="margin-bottom:0.4rem;">Volunteer Portal</span>
             <h1>Welcome, <%= currentUser.name %> 👋</h1>
             <div class="dash-meta-row">
-              <% if (currentUser.avgRating> 0) { %>
-                <span class="rank-pill" style="background:#fffbeb; border-color:#fde68a; color:#b45309;">⭐ <%=
-                    currentUser.avgRating.toFixed(1) %> (<%= currentUser.ratingCount %> ratings)</span>
-                <% } %>
-                  <span class="pill pill-delivered">✅ <%= currentUser.completedTasks %> Completed Tasks</span>
+              <% if (volunteerInfo) { %>
+                <span class="pill <%= volunteerInfo.statusBadgeClass %>">
+                  <%= volunteerInfo.liveStatusLabel %>
+                </span>
+                <span class="rank-pill">
+                  🕒 <%= volunteerInfo.scheduleDateText %> · <%= volunteerInfo.timeWindowText %>
+                </span>
+              <% } %>
+              <% if (currentUser.avgRating > 0) { %>
+                <span class="rank-pill" style="background:#fffbeb; border-color:#fde68a; color:#b45309;">
+                  ⭐ <%= currentUser.avgRating.toFixed(1) %> (<%= currentUser.ratingCount %> ratings)
+                </span>
+              <% } %>
+              <span class="pill pill-delivered">✅ <%= currentUser.completedTasks %> Completed Tasks</span>
             </div>
           </div>
           <div class="donor-dash-actions">
+            <a href="#availability-section" class="btn btn-primary">Set Availability</a>
+            <a href="/profile" class="btn btn-outline">👤 Edit Profile</a>
             <a href="/volunteer/feedback" class="btn btn-outline">My Rating History</a>
           </div>
         </div>
 
-        <% if (justDelivered) { %>
-          <div class="alert alert-success mt-lg">Delivery confirmed and feedback logged. Thank you for your service! 🎉
+        <% if (availabilityUpdated) { %>
+          <div class="alert alert-success mt-lg">
+            ✅ Your availability schedule and working hours have been updated in the database.
           </div>
-          <% } %>
+        <% } %>
 
-            <% if (nearbyAlerts.length> 0) { %>
-              <% nearbyAlerts.forEach(a=> { %>
-                <div class="alert alert-error mt-lg">
-                  🚨 <strong>
-                    <%= a.title %>
-                  </strong> — <%= a.area.address || 'nearby' %>.
-                    <% if (a.message) { %>
-                      <%= a.message %>
-                        <% } %>
+        <% if (justDelivered) { %>
+          <div class="alert alert-success mt-lg">
+            Delivery confirmed and feedback logged. Thank you for your service! 🎉
+          </div>
+        <% } %>
+
+        <% if (nearbyAlerts.length > 0) { %>
+          <% nearbyAlerts.forEach(a => { %>
+            <div class="alert alert-error mt-lg">
+              🚨 <strong><%= a.title %></strong> — <%= a.area.address || 'nearby' %>.
+              <% if (a.message) { %>
+                <%= a.message %>
+              <% } %>
+            </div>
+          <% }) %>
+        <% } %>
+
+        <div id="live-emergency-banner" class="alert alert-error mt-lg" style="display:none;"></div>
+        <div id="live-task-banner" class="alert alert-success mt-lg" style="display:none; cursor:pointer;" onclick="location.reload()">
+          🔄 A new task was assigned to you — click here to refresh.
+        </div>
+
+        <!-- Availability Schedule Section -->
+        <section id="availability-section" class="card mt-xl">
+          <div class="section-heading">
+            <div>
+              <h2 style="margin-bottom: 0.25rem;">My Availability & Working Hours</h2>
+              <p class="muted mb-0" style="font-size: var(--fs-body-sm);">
+                Keep your available day, date, and hours updated so NGO coordinators can assign deliveries at the right times.
+              </p>
+            </div>
+            <% if (volunteerInfo) { %>
+              <span class="pill <%= volunteerInfo.statusBadgeClass %>" style="font-size: var(--fs-body-sm); padding: 0.4em 0.9em;">
+                <%= volunteerInfo.liveStatusLabel %>
+              </span>
+            <% } %>
+          </div>
+
+          <form method="POST" action="/volunteer/availability" class="availability-form-grid mt-lg">
+            <div class="form-col">
+              <div class="field">
+                <label for="isAvailable">Duty Status</label>
+                <select name="isAvailable" id="isAvailable" class="form-input">
+                  <option value="true" <%= volunteerInfo && volunteerInfo.isAvailable ? 'selected' : '' %>>🟢 On-Duty / Ready for Deliveries</option>
+                  <option value="false" <%= volunteerInfo && !volunteerInfo.isAvailable ? 'selected' : '' %>>⚪ Off-Duty / On Break</option>
+                </select>
+                <div class="hint">Toggle whether you are currently ready to receive new delivery tasks.</div>
+              </div>
+
+              <div class="field">
+                <label for="availableDay">Available Day / Recurrence</label>
+                <select name="availableDay" id="availableDay" class="form-input">
+                  <% const days = ['All Days', 'Weekdays (Mon-Fri)', 'Weekends (Sat-Sun)', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']; %>
+                  <% const currentDay = (volunteerInfo && volunteerInfo.availableDay) || 'All Days'; %>
+                  <% days.forEach(d => { %>
+                    <option value="<%= d %>" <%= currentDay === d ? 'selected' : '' %>><%= d %></option>
+                  <% }) %>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="availableDate">Specific Available Date <span class="muted">(Optional)</span></label>
+                <input type="date" name="availableDate" id="availableDate" value="<%= rawDateValue || '' %>" class="form-input">
+                <div class="hint">Select a specific date if volunteering for a special event or scheduled shift.</div>
+              </div>
+            </div>
+
+            <div class="form-col">
+              <div class="time-range-row">
+                <div class="field">
+                  <label for="availableStartTime">Shift Start Time</label>
+                  <input type="time" name="availableStartTime" id="availableStartTime" value="<%= (volunteerInfo && volunteerInfo.availableStartTime) || '09:00' %>" required class="form-input">
                 </div>
-                <% }) %>
+                <div class="field">
+                  <label for="availableEndTime">Shift End Time</label>
+                  <input type="time" name="availableEndTime" id="availableEndTime" value="<%= (volunteerInfo && volunteerInfo.availableEndTime) || '18:00' %>" required class="form-input">
+                </div>
+              </div>
+
+              <div class="schedule-summary-box">
+                <strong style="display:block; margin-bottom: 0.3rem; color: var(--color-ink);">Current Live Schedule Summary:</strong>
+                <p class="mb-0 muted" style="font-size: var(--fs-body-sm);">
+                  🗓️ <strong><%= volunteerInfo ? volunteerInfo.scheduleDateText : 'All Days' %></strong>
+                  &nbsp;·&nbsp;
+                  🕒 <strong><%= volunteerInfo ? volunteerInfo.timeWindowText : '09:00 AM – 06:00 PM' %></strong>
+                </p>
+                <p class="mb-0 mt-xs" style="font-size: var(--fs-caption); color: var(--color-ink-soft);">
+                  ℹ️ <%= volunteerInfo ? volunteerInfo.whenFreeText : 'Available for deliveries' %>
+                </p>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block mt-md">Update Availability Schedule</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Active Tasks Section -->
+        <div class="section-heading mt-xl mb-md">
+          <h2>My Active Delivery Tasks</h2>
+        </div>
+
+        <% if (tasks.length === 0) { %>
+          <div class="card text-center" style="padding: var(--space-2xl);">
+            <p class="mb-0 muted" style="font-size: var(--fs-body-lg);">No active tasks right now. New delivery assignments from NGOs will appear here in real time.</p>
+          </div>
+        <% } else { %>
+          <div class="donation-cards">
+            <% tasks.forEach(t => { %>
+              <% const d = t.donationId; const request = t.foodRequestId; %>
+              <div class="card task-card">
+                <div class="section-heading" style="margin-bottom: var(--space-xs);">
+                  <strong style="text-transform:capitalize; font-size:1.15rem;">
+                    <% if (d) { %>
+                      <%= d.type %> Donation
+                    <% } else if (request) { %>
+                      Elderly Food Request
+                    <% } else { %>
+                      Delivery Task
+                    <% } %>
+                  </strong>
+                  <span class="pill pill-<%= t.status %>">
+                    <%= t.status.replace(/_/g, ' ') %>
+                  </span>
+                </div>
+                <% if (d) { %>
+                  <p class="muted mb-0">
+                    <%= d.quantity %> <%= d.unit || '' %> · <span class="code-tag"><%= d.donationCode %></span>
+                  </p>
+                <% } else if (request) { %>
+                  <p class="muted mb-0">
+                    <strong>Needs:</strong> <%= request.requirements %>
+                  </p>
+                <% } %>
+
+                <dl class="detail-list mt-sm">
+                  <dt>📍 Pickup</dt>
+                  <dd><%= t.pickupLocation.address %></dd>
+                  <dt>📍 Delivery</dt>
+                  <dd><%= t.deliveryLocation.address %></dd>
+                  <% if (d && d.timeSlot) { %>
+                    <dt>🕒 Window</dt>
+                    <dd>
+                      <%= new Date(d.timeSlot.date).toLocaleDateString() %>, <%= d.timeSlot.startTime %>–<%= d.timeSlot.endTime %>
+                    </dd>
                   <% } %>
+                </dl>
 
-                    <div id="live-emergency-banner" class="alert alert-error mt-lg" style="display:none;"></div>
-                    <div id="live-task-banner" class="alert alert-success mt-lg" style="display:none; cursor:pointer;"
-                      onclick="location.reload()">
-                      🔄 A new task was assigned to you — click here to refresh.
-                    </div>
+                <% if (mapsEnabled) { %>
+                  <iframe class="map-embed mt-sm" loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                    src="https://www.google.com/maps/embed/v1/directions?key=<%= googleMapsApiKey %>&origin=<%= encodeURIComponent(t.pickupLocation.address) %>&destination=<%= encodeURIComponent(t.deliveryLocation.address) %>"></iframe>
+                <% } %>
 
-                    <div class="section-heading mt-xl mb-md">
-                      <h2>My Active Delivery Tasks</h2>
-                    </div>
+                <a class="btn btn-outline btn-sm mt-sm" target="_blank" rel="noopener"
+                  href="https://www.google.com/maps/dir/?api=1&origin=<%= encodeURIComponent(t.pickupLocation.address) %>&destination=<%= encodeURIComponent(t.deliveryLocation.address) %>">🗺️ Open in Google Maps</a>
 
-                    <% if (tasks.length===0) { %>
-                      <div class="card text-center" style="padding: var(--space-2xl);">
-                        <p class="mb-0 muted" style="font-size: var(--fs-body-lg);">No tasks assigned right now. New
-                          delivery assignments from NGOs will appear here in real time.</p>
-                      </div>
-                      <% } else { %>
-                        <div class="donation-cards">
-                          <% tasks.forEach(t=> { %>
-                            <% const d=t.donationId; const request=t.foodRequestId; %>
-                              <div class="card task-card">
-                                <div class="section-heading" style="margin-bottom: var(--space-xs);">
-                                  <strong style="text-transform:capitalize; font-size:1.15rem;">
-                                    <% if (d) { %>
-                                      <%= d.type %>
-                                    <% } else if (request) { %>
-                                      Elderly Food Request
-                                    <% } else { %>
-                                      Delivery Task
-                                    <% } %>
-                                  </strong>
-                                  <span class="pill pill-<%= t.status %>">
-                                    <%= t.status.replace(/_/g, ' ') %>
-                                  </span>
-                                </div>
-                                <% if (d) { %>
-                                  <p class="muted mb-0">
-                                    <%= d.quantity %>
-                                      <%= d.unit || '' %> · <span class="code-tag">
-                                          <%= d.donationCode %>
-                                        </span>
-                                  </p>
-                                <% } else if (request) { %>
-                                  <p class="muted mb-0">
-                                    <strong>Needs:</strong> <%= request.requirements %>
-                                  </p>
-                                <% } %>
-
-                                <dl class="detail-list mt-sm">
-                                  <dt>📍 Pickup</dt>
-                                  <dd>
-                                    <%= t.pickupLocation.address %>
-                                  </dd>
-                                  <dt>📍 Delivery</dt>
-                                  <dd>
-                                    <%= t.deliveryLocation.address %>
-                                  </dd>
-                                  <% if (d && d.timeSlot) { %>
-                                    <dt>🕒 Window</dt>
-                                    <dd>
-                                      <%= new Date(d.timeSlot.date).toLocaleDateString() %>, <%= d.timeSlot.startTime %>–
-                                          <%= d.timeSlot.endTime %>
-                                    </dd>
-                                  <% } %>
-                                </dl>
-
-                                <% if (mapsEnabled) { %>
-                                  <iframe class="map-embed mt-sm" loading="lazy"
-                                    referrerpolicy="no-referrer-when-downgrade"
-                                    src="https://www.google.com/maps/embed/v1/directions?key=<%= googleMapsApiKey %>&origin=<%= encodeURIComponent(t.pickupLocation.address) %>&destination=<%= encodeURIComponent(t.deliveryLocation.address) %>"></iframe>
-                                  <% } %>
-
-                                    <a class="btn btn-outline btn-sm mt-sm" target="_blank" rel="noopener"
-                                      href="https://www.google.com/maps/dir/?api=1&origin=<%= encodeURIComponent(t.pickupLocation.address) %>&destination=<%= encodeURIComponent(t.deliveryLocation.address) %>">🗺️
-                                      Open in Google Maps</a>
-
-                                    <div class="row-actions mt-md">
-                                      <% if (t.status === 'assigned') { %>
-                                        <form method="POST" action="/volunteer/tasks/<%= t._id %>/accept" class="inline-form"><button class="btn btn-primary btn-sm">Accept Task</button></form>
-                                        <form method="POST" action="/volunteer/tasks/<%= t._id %>/reject" class="inline-form"><button class="btn btn-outline btn-sm">Decline</button></form>
-                                      <% } else if (t.status === 'accepted') { %>
-                                        <form method="POST" action="/volunteer/tasks/<%= t._id %>/pickup-reached" class="inline-form"><button class="btn btn-primary btn-sm">Reached Pickup</button></form>
-                                        <form method="POST" action="/volunteer/tasks/<%= t._id %>/reject" class="inline-form"><button class="btn btn-outline btn-sm">Decline</button></form>
-                                      <% } else if (t.status === 'pickup_reached') { %>
-                                        <form method="POST" action="/volunteer/tasks/<%= t._id %>/picked" class="inline-form"><button class="btn btn-primary btn-sm">Mark Picked Up</button></form>
-                                      <% } else if (t.status === 'picked') { %>
-                                        <form method="POST" action="/volunteer/tasks/<%= t._id %>/in-transit" class="inline-form"><button class="btn btn-primary btn-sm">Start Delivery</button></form>
-                                      <% } else if (t.status === 'in_transit') { %>
-                                        <a href="/volunteer/tasks/<%= t._id %>/deliver" class="btn btn-primary btn-sm">Confirm Delivery</a>
-                                      <% } %>
-                                    </div>
-                              </div>
-                              <% }) %>
-                        </div>
-                        <% } %>
+                <div class="row-actions mt-md">
+                  <% if (t.status === 'assigned') { %>
+                    <form method="POST" action="/volunteer/tasks/<%= t._id %>/accept" class="inline-form"><button class="btn btn-primary btn-sm">Accept Task</button></form>
+                    <form method="POST" action="/volunteer/tasks/<%= t._id %>/reject" class="inline-form"><button class="btn btn-outline btn-sm">Decline</button></form>
+                  <% } else if (t.status === 'accepted') { %>
+                    <form method="POST" action="/volunteer/tasks/<%= t._id %>/pickup-reached" class="inline-form"><button class="btn btn-primary btn-sm">Reached Pickup</button></form>
+                    <form method="POST" action="/volunteer/tasks/<%= t._id %>/reject" class="inline-form"><button class="btn btn-outline btn-sm">Decline</button></form>
+                  <% } else if (t.status === 'pickup_reached') { %>
+                    <form method="POST" action="/volunteer/tasks/<%= t._id %>/picked" class="inline-form"><button class="btn btn-primary btn-sm">Mark Picked Up</button></form>
+                  <% } else if (t.status === 'picked') { %>
+                    <form method="POST" action="/volunteer/tasks/<%= t._id %>/in-transit" class="inline-form"><button class="btn btn-primary btn-sm">Start Delivery</button></form>
+                  <% } else if (t.status === 'in_transit') { %>
+                    <a href="/volunteer/tasks/<%= t._id %>/deliver" class="btn btn-primary btn-sm">Confirm Delivery</a>
+                  <% } %>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
 
       </main>
       <%- include('../partials/footer') %>
@@ -177,6 +257,46 @@
             font-size: var(--fs-caption);
             color: var(--color-ink-soft);
             font-weight: 600;
+          }
+
+          .availability-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-lg);
+            background: var(--color-surface-alt);
+            padding: var(--space-lg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--color-border);
+          }
+
+          .time-range-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-md);
+          }
+
+          .schedule-summary-box {
+            background: #ffffff;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            margin-top: var(--space-sm);
+          }
+
+          .form-input {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: #ffffff;
+            font-size: var(--fs-body-sm);
+            color: var(--color-ink);
+          }
+
+          .form-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px var(--color-primary-tint);
           }
 
           .donation-cards {
@@ -245,6 +365,12 @@
             height: 180px;
             border: 1px solid var(--color-border);
             border-radius: var(--radius-md);
+          }
+
+          @media (max-width: 820px) {
+            .availability-form-grid {
+              grid-template-columns: 1fr;
+            }
           }
         </style>
         <script>

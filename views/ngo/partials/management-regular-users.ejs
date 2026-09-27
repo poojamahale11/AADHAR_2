@@ -1,0 +1,487 @@
+<section class="section-card">
+  <div class="section-header">
+    <div class="section-title">
+      <span class="icon">⭐</span>
+      <span>Regular Users</span>
+    </div>
+  </div>
+
+  <div class="regular-users-container">
+    
+    <!-- Regular Donors Panel -->
+    <div class="regular-panel">
+      <div class="panel-header">
+        <h3>👤 Regular Donors</h3>
+        <span class="panel-badge"><%= donorStats.filter(d => d.totalDonations >= 3).length %> donors</span>
+      </div>
+      
+      <div class="users-list">
+        <% if (donorStats.length === 0) { %>
+          <div class="empty-message">No donor data available yet</div>
+        <% } else { %>
+          <% donorStats.slice(0, 10).forEach((donor, index) => { %>
+            <div class="user-card <%= donor.totalDonations >= 3 ? 'regular-user' : '' %>">
+              <div class="user-rank <%= donor.totalDonations >= 10 ? 'gold' : donor.totalDonations >= 5 ? 'silver' : donor.totalDonations >= 3 ? 'bronze' : '' %>">
+                #<%= index + 1 %>
+              </div>
+              <div class="user-info">
+                <div class="user-name">Donor ID: <%= donor._id.toString().slice(-8).toUpperCase() %></div>
+                <div class="user-stats">
+                  <span class="stat-item">
+                    <strong><%= donor.totalDonations %></strong> donation<%= donor.totalDonations > 1 ? 's' : '' %>
+                  </span>
+                  <% if (donor.totalQuantity) { %>
+                    <span class="stat-item">
+                      <strong><%= donor.totalQuantity %></strong> total quantity
+                    </span>
+                  <% } %>
+                </div>
+                <% if (donor.lastDonation) { %>
+                  <div class="user-last-activity">
+                    Last: <%= new Date(donor.lastDonation).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+                  </div>
+                <% } %>
+              </div>
+              <div class="user-badges">
+                <% if (donor.totalDonations >= 10) { %>
+                  <div class="achievement-badge gold" title="10+ donations">
+                    🏆 Champion
+                  </div>
+                <% } else if (donor.totalDonations >= 5) { %>
+                  <div class="achievement-badge silver" title="5+ donations">
+                    🥈 Hero
+                  </div>
+                <% } else if (donor.totalDonations >= 3) { %>
+                  <div class="achievement-badge bronze" title="3+ donations">
+                    🥉 Regular
+                  </div>
+                <% } else { %>
+                  <div class="achievement-badge starter">
+                    ⭐ Starter
+                  </div>
+                <% } %>
+              </div>
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
+
+      <% if (donorStats.length > 10) { %>
+        <div class="panel-footer">
+          <button class="btn btn-sm btn-outline" onclick="alert('View all donors feature coming soon')">
+            View All <%= donorStats.length %> Donors
+          </button>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Frequent Elderly Requesters Panel -->
+    <div class="regular-panel">
+      <div class="panel-header">
+        <h3>👵 Frequent Requesters</h3>
+        <span class="panel-badge"><%= elderlyStats.filter(e => e.totalRequests >= 3).length %> households</span>
+      </div>
+      
+      <div class="users-list">
+        <% if (elderlyStats.length === 0) { %>
+          <div class="empty-message">No elderly request data available yet</div>
+        <% } else { %>
+          <% elderlyStats.slice(0, 10).forEach((elderly, index) => { %>
+            <div class="user-card <%= elderly.totalRequests >= 3 ? 'regular-user' : '' %>">
+              <div class="user-rank <%= elderly.totalRequests >= 10 ? 'gold' : elderly.totalRequests >= 5 ? 'silver' : elderly.totalRequests >= 3 ? 'bronze' : '' %>">
+                #<%= index + 1 %>
+              </div>
+              <div class="user-info">
+                <div class="user-name">Household ID: <%= elderly._id.toString().slice(-8).toUpperCase() %></div>
+                <div class="user-stats">
+                  <span class="stat-item">
+                    <strong><%= elderly.totalRequests %></strong> request<%= elderly.totalRequests > 1 ? 's' : '' %>
+                  </span>
+                  <span class="stat-item">
+                    <strong><%= elderly.deliveredCount || 0 %></strong> delivered
+                  </span>
+                </div>
+                <% if (elderly.lastRequest) { %>
+                  <div class="user-last-activity">
+                    Last: <%= new Date(elderly.lastRequest).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+                  </div>
+                <% } %>
+              </div>
+              <div class="user-badges">
+                <% if (elderly.totalRequests >= 10) { %>
+                  <div class="achievement-badge priority" title="10+ requests - High Priority">
+                    🔴 High Priority
+                  </div>
+                <% } else if (elderly.totalRequests >= 5) { %>
+                  <div class="achievement-badge attention" title="5+ requests - Needs Attention">
+                    🟡 Attention
+                  </div>
+                <% } else if (elderly.totalRequests >= 3) { %>
+                  <div class="achievement-badge regular-elderly" title="3+ requests - Regular">
+                    👵 Regular
+                  </div>
+                <% } else { %>
+                  <div class="achievement-badge normal">
+                    ✓ Normal
+                  </div>
+                <% } %>
+              </div>
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
+
+      <% if (elderlyStats.length > 10) { %>
+        <div class="panel-footer">
+          <button class="btn btn-sm btn-outline" onclick="alert('View all requesters feature coming soon')">
+            View All <%= elderlyStats.length %> Requesters
+          </button>
+        </div>
+      <% } %>
+    </div>
+
+  </div>
+
+  <!-- Summary Statistics -->
+  <div class="summary-stats">
+    <div class="summary-card">
+      <div class="summary-icon">📊</div>
+      <div class="summary-content">
+        <div class="summary-label">Total Regular Donors</div>
+        <div class="summary-value"><%= donorStats.filter(d => d.totalDonations >= 3).length %></div>
+        <div class="summary-meta">3+ donations each</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">👥</div>
+      <div class="summary-content">
+        <div class="summary-label">Total Frequent Requesters</div>
+        <div class="summary-value"><%= elderlyStats.filter(e => e.totalRequests >= 3).length %></div>
+        <div class="summary-meta">3+ requests each</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">🏆</div>
+      <div class="summary-content">
+        <div class="summary-label">Champion Donors</div>
+        <div class="summary-value"><%= donorStats.filter(d => d.totalDonations >= 10).length %></div>
+        <div class="summary-meta">10+ donations</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">🔴</div>
+      <div class="summary-content">
+        <div class="summary-label">High Priority Elderly</div>
+        <div class="summary-value"><%= elderlyStats.filter(e => e.totalRequests >= 10).length %></div>
+        <div class="summary-meta">10+ requests</div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<style>
+  .regular-users-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-lg);
+  }
+
+  .regular-panel {
+    background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+    border: 2px solid #fde047;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: white;
+    padding: var(--space-md);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .panel-header h3 {
+    font-size: var(--fs-body);
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .panel-badge {
+    background: rgba(255, 255, 255, 0.3);
+    padding: 0.3em 0.7em;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .users-list {
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  .empty-message {
+    text-align: center;
+    padding: var(--space-xl);
+    color: var(--color-muted);
+    font-style: italic;
+  }
+
+  .user-card {
+    background: white;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    transition: all var(--transition-fast);
+  }
+
+  .user-card:hover {
+    transform: translateX(4px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .user-card.regular-user {
+    border-color: #fbbf24;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  }
+
+  .user-rank {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 0.85rem;
+    background: var(--color-border);
+    color: var(--color-ink);
+    flex-shrink: 0;
+  }
+
+  .user-rank.gold {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: white;
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2);
+  }
+
+  .user-rank.silver {
+    background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+    color: white;
+    box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.2);
+  }
+
+  .user-rank.bronze {
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+    color: white;
+    box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.2);
+  }
+
+  .user-info {
+    flex: 1;
+  }
+
+  .user-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-ink);
+    margin-bottom: 0.3em;
+    font-family: var(--font-mono);
+  }
+
+  .user-stats {
+    display: flex;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+  }
+
+  .stat-item {
+    font-size: 0.75rem;
+    color: var(--color-muted);
+  }
+
+  .stat-item strong {
+    color: var(--color-ink);
+    font-weight: 700;
+  }
+
+  .user-last-activity {
+    font-size: 0.7rem;
+    color: var(--color-muted);
+    margin-top: 0.3em;
+  }
+
+  .user-badges {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3em;
+    align-items: flex-end;
+  }
+
+  .achievement-badge {
+    padding: 0.3em 0.7em;
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .achievement-badge.gold {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    border: 1px solid #fbbf24;
+  }
+
+  .achievement-badge.silver {
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    color: #475569;
+    border: 1px solid #cbd5e1;
+  }
+
+  .achievement-badge.bronze {
+    background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+    color: #9a3412;
+    border: 1px solid #fb923c;
+  }
+
+  .achievement-badge.starter {
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+  }
+
+  .achievement-badge.priority {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #991b1b;
+    border: 1px solid #ef4444;
+    animation: priorityGlow 2s infinite;
+  }
+
+  @keyframes priorityGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+  }
+
+  .achievement-badge.attention {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    border: 1px solid #f59e0b;
+  }
+
+  .achievement-badge.regular-elderly {
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+    color: #3730a3;
+    border: 1px solid #818cf8;
+  }
+
+  .achievement-badge.normal {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #86efac;
+  }
+
+  .panel-footer {
+    padding: var(--space-md);
+    background: white;
+    border-top: 2px solid var(--color-border);
+    text-align: center;
+  }
+
+  /* Summary Statistics */
+  .summary-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 2px solid var(--color-border);
+  }
+
+  .summary-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    transition: all var(--transition-fast);
+  }
+
+  .summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .summary-icon {
+    font-size: 1.8rem;
+    flex-shrink: 0;
+  }
+
+  .summary-content {
+    flex: 1;
+  }
+
+  .summary-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .summary-value {
+    font-size: var(--fs-display-sm);
+    font-weight: 700;
+    color: var(--color-ink);
+    line-height: 1.2;
+    margin: 0.2em 0;
+  }
+
+  .summary-meta {
+    font-size: 0.7rem;
+    color: var(--color-muted);
+  }
+
+  /* Scrollbar */
+  .users-list::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .users-list::-webkit-scrollbar-track {
+    background: var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+  }
+
+  .users-list::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: var(--radius-sm);
+  }
+
+  .users-list::-webkit-scrollbar-thumb:hover {
+    background: var(--color-muted);
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .regular-users-container {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .summary-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>

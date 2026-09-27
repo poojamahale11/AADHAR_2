@@ -16,14 +16,31 @@ const taskSchema = new mongoose.Schema(
       lat: { type: Number, default: null },
       lng: { type: Number, default: null },
     },
-    // Delivery location defaults to the NGO's own address for Phase 3 — most
-    // donations flow donor -> NGO collection point -> beneficiary. NGOs can
-    // override with a specific beneficiary address when assigning.
+    
+    // Delivery location - can be elderly couple, NGO center, or custom recipient
     deliveryLocation: {
       address: { type: String, required: true },
       lat: { type: Number, default: null },
       lng: { type: Number, default: null },
     },
+
+    // New: Custom recipient details for "Other Needy People"
+    customRecipient: {
+      name: { type: String, trim: true, default: null },
+      contactPerson: { type: String, trim: true, default: null },
+      phone: { type: String, trim: true, default: null },
+    },
+
+    // New: Real-time tracking data
+    currentLocation: {
+      lat: { type: Number, default: null },
+      lng: { type: Number, default: null },
+      lastUpdated: { type: Date, default: null },
+    },
+
+    estimatedArrivalTime: { type: Date, default: null },
+    routeDistance: { type: Number, default: null }, // in kilometers
+    routeDuration: { type: Number, default: null }, // in minutes
 
     status: { type: String, enum: TASK_STATUSES, default: 'assigned', index: true },
 
@@ -52,7 +69,16 @@ taskSchema.pre('validate', function (next) {
 
 taskSchema.statics.STATUSES = TASK_STATUSES;
 
-taskSchema.statics.createForDonation = async function ({ donation, volunteerId, ngoId, beneficiaryId, deliveryAddress, deliveryLat, deliveryLng }) {
+taskSchema.statics.createForDonation = async function ({ 
+  donation, 
+  volunteerId, 
+  ngoId, 
+  beneficiaryId, 
+  deliveryAddress, 
+  deliveryLat, 
+  deliveryLng,
+  customRecipient = null
+}) {
   return this.create({
     donationId: donation._id,
     beneficiaryId,
@@ -64,6 +90,7 @@ taskSchema.statics.createForDonation = async function ({ donation, volunteerId, 
       lat: deliveryLat ?? null,
       lng: deliveryLng ?? null,
     },
+    customRecipient: customRecipient || {},
     deliveryOtp: generateOtp(),
   });
 };
@@ -77,8 +104,8 @@ taskSchema.statics.createForFoodRequest = async function ({ request, volunteerId
     pickupLocation: { address: 'Lions Club food collection point' },
     deliveryLocation: {
       address: request.deliveryAddress,
-      lat: null,
-      lng: null,
+      lat: request.location?.lat ?? null,
+      lng: request.location?.lng ?? null,
     },
     deliveryOtp: generateOtp(),
   });

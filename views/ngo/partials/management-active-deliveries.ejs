@@ -1,0 +1,532 @@
+<section class="section-card">
+  <div class="section-header">
+    <div class="section-title">
+      <span class="icon">🚚</span>
+      <span>Active Deliveries</span>
+      <span class="section-count"><%= activeDeliveries.length %></span>
+    </div>
+    <div class="section-actions">
+      <button class="btn btn-sm btn-outline" onclick="refreshDeliveries()">🔄 Refresh</button>
+    </div>
+  </div>
+
+  <div class="active-deliveries-list">
+    <% if (activeDeliveries.length === 0) { %>
+      <div class="empty-state">
+        <span class="empty-icon">🚚</span>
+        <p>No active deliveries</p>
+        <small class="muted">All deliveries are completed or pending assignment</small>
+      </div>
+    <% } else { %>
+      <% activeDeliveries.forEach(task => { 
+        const isDonation = !!task.donationId;
+        const isFoodRequest = !!task.foodRequestId;
+        
+        // Calculate time elapsed since assignment
+        const assignedTime = new Date(task.createdAt);
+        const now = new Date();
+        const elapsedMinutes = Math.floor((now - assignedTime) / (1000 * 60));
+        const elapsedHours = Math.floor(elapsedMinutes / 60);
+        const remainingMinutes = elapsedMinutes % 60;
+      %>
+        <div class="delivery-item">
+          
+          <!-- Delivery Header -->
+          <div class="delivery-header">
+            <div class="delivery-type-badge <%= isDonation ? 'donation-type' : 'request-type' %>">
+              <%= isDonation ? '📦 Donation' : '🍛 Food Request' %>
+            </div>
+            <div class="delivery-time-badge">
+              ⏱️ <%= elapsedHours > 0 ? elapsedHours + 'h ' : '' %><%= remainingMinutes %>m in progress
+            </div>
+          </div>
+
+          <!-- Complete Flow Visualization -->
+          <div class="delivery-flow-container">
+            <div class="flow-visualization-large">
+              
+              <!-- Donor/Requester Node -->
+              <div class="flow-node-large completed">
+                <div class="node-icon"><%= isDonation ? '👤' : '👵' %></div>
+                <div class="node-label"><%= isDonation ? 'Donor' : 'Elderly Couple' %></div>
+                <div class="node-name">
+                  <% if (isDonation && task.donationId && task.donationId.donorId) { %>
+                    <%= task.donationId.donorId.name %>
+                  <% } else if (isFoodRequest && task.foodRequestId && task.foodRequestId.householdId) { %>
+                    <%= task.foodRequestId.householdId.name %>
+                  <% } else { %>
+                    N/A
+                  <% } %>
+                </div>
+                <% if (isDonation && task.donationId && task.donationId.donorId) { %>
+                  <div class="node-detail">📞 <%= task.donationId.donorId.phone %></div>
+                <% } else if (isFoodRequest && task.foodRequestId && task.foodRequestId.householdId) { %>
+                  <div class="node-detail">📞 <%= task.foodRequestId.householdId.phone %></div>
+                <% } %>
+              </div>
+
+              <div class="flow-arrow-large">→</div>
+
+              <!-- Donation/Request Node -->
+              <div class="flow-node-large completed">
+                <div class="node-icon"><%= isDonation ? '📦' : '🍛' %></div>
+                <div class="node-label"><%= isDonation ? 'Donation' : 'Request' %></div>
+                <div class="node-name">
+                  <% if (isDonation && task.donationId) { %>
+                    <%= task.donationId.donationCode %>
+                  <% } else if (isFoodRequest && task.foodRequestId) { %>
+                    <%= task.foodRequestId.numberOfPeople || 2 %> people
+                  <% } %>
+                </div>
+                <% if (isDonation && task.donationId) { %>
+                  <div class="node-detail">
+                    <%= task.donationId.quantity %> <%= task.donationId.unit || 'units' %>
+                  </div>
+                <% } else if (isFoodRequest && task.foodRequestId) { %>
+                  <div class="node-detail">
+                    <%= task.foodRequestId.foodPreference === 'veg' ? '🥗 Veg' : '🍖 Non-Veg' %>
+                  </div>
+                <% } %>
+              </div>
+
+              <div class="flow-arrow-large">→</div>
+
+              <!-- Volunteer Node -->
+              <div class="flow-node-large <%= task.status === 'assigned' ? 'in-progress' : 'completed' %>">
+                <div class="node-icon">🚶</div>
+                <div class="node-label">Volunteer</div>
+                <div class="node-name">
+                  <%= task.volunteerId ? task.volunteerId.name : 'Unknown' %>
+                </div>
+                <% if (task.volunteerId && task.volunteerId.phone) { %>
+                  <div class="node-detail">📞 <%= task.volunteerId.phone %></div>
+                <% } %>
+              </div>
+
+              <div class="flow-arrow-large">→</div>
+
+              <!-- Receiver Node -->
+              <div class="flow-node-large <%= task.beneficiaryId ? 'completed' : 'pending' %>">
+                <div class="node-icon">👵</div>
+                <div class="node-label">Receiver</div>
+                <div class="node-name">
+                  <%= task.beneficiaryId ? task.beneficiaryId.name : 'Not Assigned' %>
+                </div>
+                <% if (task.beneficiaryId) { %>
+                  <div class="node-detail">
+                    📍 <%= task.deliveryLocation.address %>
+                  </div>
+                <% } %>
+              </div>
+
+              <div class="flow-arrow-large">→</div>
+
+              <!-- Delivery Status Node -->
+              <div class="flow-node-large in-progress">
+                <div class="node-icon">
+                  <%= task.status === 'delivered' ? '✅' : task.status === 'in_transit' ? '🚚' : task.status === 'picked' ? '📦' : task.status === 'pickup_reached' ? '📍' : task.status === 'accepted' ? '👍' : '⏳' %>
+                </div>
+                <div class="node-label">Delivery Status</div>
+                <div class="node-name"><%= task.status.replace(/_/g, ' ') %></div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Status Timeline -->
+          <div class="status-timeline">
+            <div class="timeline-title">Delivery Timeline:</div>
+            <div class="timeline-track">
+              
+              <!-- Assigned -->
+              <div class="timeline-step <%= task.status === 'assigned' || task.status === 'accepted' || task.status === 'pickup_reached' || task.status === 'picked' || task.status === 'in_transit' || task.status === 'delivered' ? 'completed' : 'pending' %>">
+                <div class="step-dot"></div>
+                <div class="step-label">Assigned</div>
+                <% if (task.createdAt) { %>
+                  <div class="step-time"><%= new Date(task.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) %></div>
+                <% } %>
+              </div>
+
+              <div class="timeline-connector <%= task.acceptedAt ? 'active' : '' %>"></div>
+
+              <!-- Accepted -->
+              <div class="timeline-step <%= task.status === 'accepted' || task.status === 'pickup_reached' || task.status === 'picked' || task.status === 'in_transit' || task.status === 'delivered' ? 'completed' : task.status === 'assigned' ? 'in-progress' : 'pending' %>">
+                <div class="step-dot"></div>
+                <div class="step-label">Accepted</div>
+                <% if (task.acceptedAt) { %>
+                  <div class="step-time"><%= new Date(task.acceptedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) %></div>
+                <% } %>
+              </div>
+
+              <div class="timeline-connector <%= task.pickupReachedAt ? 'active' : '' %>"></div>
+
+              <!-- Reached Pickup -->
+              <div class="timeline-step <%= task.status === 'pickup_reached' || task.status === 'picked' || task.status === 'in_transit' || task.status === 'delivered' ? 'completed' : task.status === 'accepted' ? 'in-progress' : 'pending' %>">
+                <div class="step-dot"></div>
+                <div class="step-label">Reached Pickup</div>
+                <% if (task.pickupReachedAt) { %>
+                  <div class="step-time"><%= new Date(task.pickupReachedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) %></div>
+                <% } %>
+              </div>
+
+              <div class="timeline-connector <%= task.pickedAt ? 'active' : '' %>"></div>
+
+              <!-- Picked Up -->
+              <div class="timeline-step <%= task.status === 'picked' || task.status === 'in_transit' || task.status === 'delivered' ? 'completed' : task.status === 'pickup_reached' ? 'in-progress' : 'pending' %>">
+                <div class="step-dot"></div>
+                <div class="step-label">Picked Up</div>
+                <% if (task.pickedAt) { %>
+                  <div class="step-time"><%= new Date(task.pickedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) %></div>
+                <% } %>
+              </div>
+
+              <div class="timeline-connector <%= task.inTransitAt ? 'active' : '' %>"></div>
+
+              <!-- In Transit -->
+              <div class="timeline-step <%= task.status === 'in_transit' || task.status === 'delivered' ? 'completed' : task.status === 'picked' ? 'in-progress' : 'pending' %>">
+                <div class="step-dot"></div>
+                <div class="step-label">In Transit</div>
+                <% if (task.inTransitAt) { %>
+                  <div class="step-time"><%= new Date(task.inTransitAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) %></div>
+                <% } %>
+              </div>
+
+              <div class="timeline-connector <%= task.deliveredAt ? 'active' : '' %>"></div>
+
+              <!-- Delivered -->
+              <div class="timeline-step <%= task.status === 'delivered' ? 'completed' : task.status === 'in_transit' ? 'in-progress' : 'pending' %>">
+                <div class="step-dot"></div>
+                <div class="step-label">Delivered</div>
+                <% if (task.deliveredAt) { %>
+                  <div class="step-time"><%= new Date(task.deliveredAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) %></div>
+                <% } %>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Delivery Actions -->
+          <div class="delivery-actions">
+            <a href="/admin/logistics?task=<%= task._id %>" class="btn btn-sm btn-primary">
+              🗺️ Track on Map
+            </a>
+            <button class="btn btn-sm btn-outline" onclick="viewTaskDetails('<%= task._id %>')">
+              View Full Details
+            </button>
+          </div>
+
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+</section>
+
+<style>
+  .active-deliveries-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: var(--space-xs);
+  }
+
+  .delivery-item {
+    background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+    border: 2px solid #3b82f6;
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    transition: all var(--transition-fast);
+  }
+
+  .delivery-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
+  }
+
+  .delivery-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-md);
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+  }
+
+  .delivery-type-badge {
+    padding: 0.4em 0.8em;
+    border-radius: var(--radius-full);
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .delivery-type-badge.donation-type {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #1e40af;
+  }
+
+  .delivery-type-badge.request-type {
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+    color: #166534;
+  }
+
+  .delivery-time-badge {
+    padding: 0.4em 0.8em;
+    background: #fef3c7;
+    color: #92400e;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  /* Flow Visualization - Large */
+  .delivery-flow-container {
+    margin-bottom: var(--space-lg);
+  }
+
+  .flow-visualization-large {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-xs);
+    overflow-x: auto;
+    padding: var(--space-md);
+    background: white;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--color-border);
+  }
+
+  .flow-node-large {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3em;
+    padding: var(--space-md);
+    background: white;
+    border: 3px solid #cbd5e1;
+    border-radius: var(--radius-lg);
+    min-width: 120px;
+    text-align: center;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+  }
+
+  .flow-node-large.completed {
+    border-color: #22c55e;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+  }
+
+  .flow-node-large.in-progress {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    animation: nodeGlow 2s infinite;
+  }
+
+  @keyframes nodeGlow {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    50% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.2), 0 0 20px rgba(59, 130, 246, 0.3); }
+  }
+
+  .flow-node-large.pending {
+    border-color: #e5e7eb;
+    background: #f9fafb;
+    opacity: 0.5;
+  }
+
+  .node-icon {
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  .node-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .node-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-ink);
+    word-break: break-word;
+  }
+
+  .node-detail {
+    font-size: 0.7rem;
+    color: var(--color-muted);
+    word-break: break-word;
+  }
+
+  .flow-arrow-large {
+    font-size: 1.8rem;
+    color: #3b82f6;
+    font-weight: 700;
+    flex-shrink: 0;
+    animation: arrowPulse 2s infinite;
+  }
+
+  @keyframes arrowPulse {
+    0%, 100% { transform: translateX(0); opacity: 0.7; }
+    50% { transform: translateX(4px); opacity: 1; }
+  }
+
+  /* Status Timeline */
+  .status-timeline {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-md);
+  }
+
+  .timeline-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-ink);
+    margin-bottom: var(--space-md);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .timeline-track {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    overflow-x: auto;
+    padding: var(--space-sm) 0;
+  }
+
+  .timeline-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3em;
+    position: relative;
+    z-index: 2;
+    min-width: 80px;
+    flex-shrink: 0;
+  }
+
+  .step-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    border: 3px solid #e5e7eb;
+    transition: all var(--transition-fast);
+  }
+
+  .timeline-step.completed .step-dot {
+    background: #22c55e;
+    border-color: #16a34a;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2);
+  }
+
+  .timeline-step.in-progress .step-dot {
+    background: #3b82f6;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+    animation: dotPulse 1.5s infinite;
+  }
+
+  @keyframes dotPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.1); }
+  }
+
+  .step-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--color-ink);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .step-time {
+    font-size: 0.65rem;
+    color: var(--color-muted);
+    font-weight: 600;
+  }
+
+  .timeline-connector {
+    flex: 1;
+    height: 3px;
+    background: #e5e7eb;
+    margin: 0 -5px;
+    margin-top: -35px;
+    z-index: 1;
+    transition: all var(--transition-fast);
+  }
+
+  .timeline-connector.active {
+    background: linear-gradient(90deg, #22c55e 0%, #3b82f6 100%);
+  }
+
+  /* Delivery Actions */
+  .delivery-actions {
+    display: flex;
+    gap: var(--space-sm);
+    padding-top: var(--space-md);
+    border-top: 2px solid var(--color-border);
+  }
+
+  /* Scrollbar */
+  .active-deliveries-list::-webkit-scrollbar,
+  .timeline-track::-webkit-scrollbar,
+  .flow-visualization-large::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .active-deliveries-list::-webkit-scrollbar-track,
+  .timeline-track::-webkit-scrollbar-track,
+  .flow-visualization-large::-webkit-scrollbar-track {
+    background: var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+  }
+
+  .active-deliveries-list::-webkit-scrollbar-thumb,
+  .timeline-track::-webkit-scrollbar-thumb,
+  .flow-visualization-large::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: var(--radius-sm);
+  }
+
+  .active-deliveries-list::-webkit-scrollbar-thumb:hover,
+  .timeline-track::-webkit-scrollbar-thumb:hover,
+  .flow-visualization-large::-webkit-scrollbar-thumb:hover {
+    background: var(--color-muted);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .flow-node-large {
+      min-width: 100px;
+      padding: var(--space-sm);
+    }
+    
+    .node-icon {
+      font-size: 1.5rem;
+    }
+    
+    .timeline-step {
+      min-width: 60px;
+    }
+  }
+</style>
+
+<script>
+  function refreshDeliveries() {
+    location.reload();
+  }
+
+  function viewTaskDetails(taskId) {
+    window.location.href = `/admin/logistics?task=${taskId}`;
+  }
+</script>

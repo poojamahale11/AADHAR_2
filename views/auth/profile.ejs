@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('../partials/head', { title: 'Edit Profile & Personal Information' }) %>
+<body>
+  <%- include('../partials/navbar') %>
+  <main class="container profile-page">
+
+    <% const roleHome = user.role === 'ngo_admin' ? '/admin/dashboard' : '/' + user.role + '/dashboard'; %>
+
+    <div class="form-page-head">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-sm);">
+        <div>
+          <a href="<%= roleHome %>" class="link-back mb-xs" style="display:inline-block; font-size: var(--fs-caption); font-weight:700;">← Back to Dashboard</a>
+          <h1 style="margin-bottom: 0.25rem;">Personal Information & Profile</h1>
+          <p class="muted mb-0">Update your account details, contact information, and role-specific preferences.</p>
+        </div>
+        <span class="pill pill-assigned" style="font-size: var(--fs-body-sm); text-transform: capitalize; padding: 0.4em 1em;">
+          <%= user.role === 'ngo_admin' ? 'NGO Administrator' : (user.role === 'elderly' ? 'Elderly Resident' : user.role) %>
+        </span>
+      </div>
+    </div>
+
+    <% if (success) { %>
+      <div class="alert alert-success mt-md">
+        ✅ Your profile details have been saved successfully and are now live across AADHAR.
+      </div>
+    <% } %>
+
+    <% if (passwordSuccess) { %>
+      <div class="alert alert-success mt-md">
+        🔐 Your account password has been updated securely.
+      </div>
+    <% } %>
+
+    <% if (errors && errors.length > 0) { %>
+      <div class="alert alert-error mt-md">
+        <% errors.forEach(e => { %>
+          <p class="mb-0">• <%= e %></p>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <!-- Account Overview Card -->
+    <div class="card profile-header-card mt-lg">
+      <div class="profile-avatar-block">
+        <div class="profile-avatar-circle">
+          <%= (user.name || 'U').charAt(0).toUpperCase() %>
+        </div>
+        <div>
+          <h2 style="margin: 0 0 0.2rem 0; font-size: 1.4rem;"><%= user.name %></h2>
+          <p class="muted mb-0" style="font-size: var(--fs-body-sm);">
+            ✉️ <%= user.email %> &nbsp;·&nbsp; 📞 <%= user.phone %>
+          </p>
+        </div>
+      </div>
+
+      <div class="profile-meta-badges">
+        <% if (user.role === 'donor') { %>
+          <span class="rank-pill">🎁 <%= user.totalDonations || 0 %> Total Donations</span>
+          <% if (user.leaderboardScore > 0) { %>
+            <span class="rank-pill" style="background:#fffbeb; border-color:#fde68a; color:#b45309;">🏆 <%= user.leaderboardScore %> Points</span>
+          <% } %>
+        <% } else if (user.role === 'volunteer') { %>
+          <span class="pill <%= user.isAvailable !== false ? 'pill-delivered' : 'pill-cancelled' %>">
+            <%= user.isAvailable !== false ? '🟢 Ready / On-Duty' : '⚪ Off-Duty' %>
+          </span>
+          <span class="rank-pill">✅ <%= user.completedTasks || 0 %> Completed Tasks</span>
+          <% if (user.avgRating > 0) { %>
+            <span class="rank-pill" style="background:#fffbeb; border-color:#fde68a; color:#b45309;">⭐ <%= user.avgRating.toFixed(1) %></span>
+          <% } %>
+        <% } else if (user.role === 'ngo_admin') { %>
+          <span class="rank-pill">🏢 <%= user.organizationName %></span>
+        <% } else if (user.role === 'elderly') { %>
+          <span class="rank-pill">👥 Partner: <%= user.partnerName || 'Not specified' %></span>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Edit Profile Form -->
+    <form method="POST" action="/profile" class="profile-form mt-lg">
+
+      <!-- Section 1: Basic & Contact Details -->
+      <section class="card">
+        <div class="section-heading">
+          <h2>1. Basic & Contact Information</h2>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="field">
+            <label for="name">Full Name <span class="required-star">*</span></label>
+            <input type="text" name="name" id="name" value="<%= user.name || '' %>" required maxlength="100" class="form-input">
+            <div class="hint">Your legal or display name shown on receipts, tasks, and dashboards.</div>
+          </div>
+
+          <div class="field">
+            <label for="phone">Phone Number (10 Digits) <span class="required-star">*</span></label>
+            <input type="tel" name="phone" id="phone" value="<%= user.phone || '' %>" required pattern="[0-9]{10}" maxlength="10" class="form-input">
+            <div class="hint">Used for SMS coordination and delivery verifications.</div>
+          </div>
+        </div>
+
+        <div class="field mt-sm">
+          <label for="email">Email Address <span class="required-star">*</span></label>
+          <input type="email" name="email" id="email" value="<%= user.email || '' %>" required class="form-input">
+          <div class="hint">Your login credential and email notification destination.</div>
+        </div>
+      </section>
+
+      <!-- Section 2: Role-Specific Details -->
+      <section class="card mt-lg">
+        <div class="section-heading">
+          <h2>2. <%= user.role === 'donor' ? 'Donor & Organization Preferences' : (user.role === 'volunteer' ? 'Volunteer Skills & Shift Availability' : (user.role === 'ngo_admin' ? 'NGO Administrator Details' : 'Household & Delivery Details')) %></h2>
+        </div>
+
+        <% if (user.role === 'donor') { %>
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="donorType">Donor Type</label>
+              <select name="donorType" id="donorType" class="form-input">
+                <option value="individual" <%= user.donorType === 'individual' ? 'selected' : '' %>>Individual Citizen</option>
+                <option value="hotel" <%= user.donorType === 'hotel' ? 'selected' : '' %>>Hotel / Restaurant / Banquet</option>
+                <option value="business" <%= user.donorType === 'business' ? 'selected' : '' %>>Corporate / Business Entity</option>
+              </select>
+            </div>
+
+            <div class="field" id="orgNameField" style="<%= user.donorType === 'individual' ? 'display:none;' : '' %>">
+              <label for="organizationName">Organization / Business Name</label>
+              <input type="text" name="organizationName" id="organizationName" value="<%= user.organizationName || '' %>" class="form-input" placeholder="e.g. The Grand Palace Hotel">
+            </div>
+          </div>
+
+        <% } else if (user.role === 'volunteer') { %>
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="address">Base Location / City Address</label>
+              <input type="text" name="address" id="address" value="<%= (user.location && user.location.address) || '' %>" class="form-input" placeholder="e.g. College Road, Nashik">
+              <div class="hint">Used to calculate road distance to nearby donation pickups.</div>
+            </div>
+
+            <div class="field">
+              <label for="skills">Skills & Expertise <span class="muted">(Comma-separated)</span></label>
+              <input type="text" name="skills" id="skills" value="<%= Array.isArray(user.skills) ? user.skills.join(', ') : (user.skills || '') %>" class="form-input" placeholder="Food Distribution, Driving, First Aid">
+              <div class="hint">Helps coordinators assign the right tasks to you.</div>
+            </div>
+          </div>
+
+          <hr class="divider">
+
+          <h3>Shift Availability Schedule</h3>
+          <div class="form-grid-2 mt-sm">
+            <div class="field">
+              <label for="isAvailable">Duty Status</label>
+              <select name="isAvailable" id="isAvailable" class="form-input">
+                <option value="true" <%= user.isAvailable !== false ? 'selected' : '' %>>🟢 Ready / On-Duty for Deliveries</option>
+                <option value="false" <%= user.isAvailable === false ? 'selected' : '' %>>⚪ Off-Duty / Unavailable</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="availableDay">Available Day(s)</label>
+              <select name="availableDay" id="availableDay" class="form-input">
+                <% const availDays = ['All Days', 'Weekdays (Mon-Fri)', 'Weekends (Sat-Sun)', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']; %>
+                <% const selDay = user.availableDay || 'All Days'; %>
+                <% availDays.forEach(d => { %>
+                  <option value="<%= d %>" <%= selDay === d ? 'selected' : '' %>><%= d %></option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-3 mt-sm">
+            <div class="field">
+              <label for="availableDate">Specific Available Date <span class="muted">(Optional)</span></label>
+              <input type="date" name="availableDate" id="availableDate" value="<%= rawDateValue || '' %>" class="form-input">
+            </div>
+
+            <div class="field">
+              <label for="availableStartTime">Shift Start Time</label>
+              <input type="time" name="availableStartTime" id="availableStartTime" value="<%= user.availableStartTime || '09:00' %>" class="form-input">
+            </div>
+
+            <div class="field">
+              <label for="availableEndTime">Shift End Time</label>
+              <input type="time" name="availableEndTime" id="availableEndTime" value="<%= user.availableEndTime || '18:00' %>" class="form-input">
+            </div>
+          </div>
+
+        <% } else if (user.role === 'ngo_admin') { %>
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="organizationName">NGO Organization Name <span class="required-star">*</span></label>
+              <input type="text" name="organizationName" id="organizationName" value="<%= user.organizationName || '' %>" required class="form-input">
+            </div>
+
+            <div class="field">
+              <label for="upiId">Official Donation UPI ID <span class="required-star">*</span></label>
+              <input type="text" name="upiId" id="upiId" value="<%= user.upiId || '' %>" required class="form-input" placeholder="e.g. lionsclub@upi">
+            </div>
+          </div>
+
+          <div class="field mt-sm">
+            <label for="organizationAddress">NGO Headquarters / Central Collection Address</label>
+            <textarea name="organizationAddress" id="organizationAddress" rows="2" class="form-input"><%= user.organizationAddress || '' %></textarea>
+          </div>
+
+        <% } else if (user.role === 'elderly') { %>
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="partnerName">Partner / Spouse Full Name <span class="required-star">*</span></label>
+              <input type="text" name="partnerName" id="partnerName" value="<%= user.partnerName || '' %>" required class="form-input">
+              <div class="hint">Co-resident of the household receiving meals.</div>
+            </div>
+          </div>
+
+          <div class="field mt-sm">
+            <label for="homeAddress">Complete Home Delivery Address <span class="required-star">*</span></label>
+            <textarea name="homeAddress" id="homeAddress" rows="3" required class="form-input" placeholder="Flat No, Building, Street, Landmark, City"><%= user.homeAddress || '' %></textarea>
+            <div class="hint">Volunteers use this address directly for hot meal deliveries.</div>
+          </div>
+        <% } %>
+      </section>
+
+      <!-- Section 3: Password / Security (Optional) -->
+      <section class="card mt-lg">
+        <div class="section-heading">
+          <h2>3. Security & Password Change <span class="muted" style="font-size: var(--fs-body-sm); font-weight: normal;">(Leave blank to keep current password)</span></h2>
+        </div>
+
+        <div class="form-grid-3">
+          <div class="field">
+            <label for="currentPassword">Current Password</label>
+            <input type="password" name="currentPassword" id="currentPassword" class="form-input" placeholder="••••••••" autocomplete="current-password">
+          </div>
+
+          <div class="field">
+            <label for="newPassword">New Password</label>
+            <input type="password" name="newPassword" id="newPassword" minlength="8" class="form-input" placeholder="Min 8 characters" autocomplete="new-password">
+          </div>
+
+          <div class="field">
+            <label for="confirmPassword">Confirm New Password</label>
+            <input type="password" name="confirmPassword" id="confirmPassword" minlength="8" class="form-input" placeholder="Confirm new password" autocomplete="new-password">
+          </div>
+        </div>
+      </section>
+
+      <!-- Submit & Cancel Actions -->
+      <div class="profile-actions-bar mt-lg">
+        <button type="submit" class="btn btn-primary btn-lg">💾 Save Profile Changes</button>
+        <a href="<%= roleHome %>" class="btn btn-outline btn-lg">Cancel</a>
+      </div>
+    </form>
+
+  </main>
+  <%- include('../partials/footer') %>
+
+  <style>
+    .profile-page {
+      padding: var(--space-xl) 0 var(--space-2xl) 0;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .profile-header-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+      background: linear-gradient(135deg, #ffffff 0%, #fffaf5 100%);
+      border: 1px solid var(--color-border);
+    }
+
+    .profile-avatar-block {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .profile-avatar-circle {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--color-primary) 0%, #b4381e 100%);
+      color: #ffffff;
+      font-size: 1.6rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-sm);
+      flex-shrink: 0;
+    }
+
+    .profile-meta-badges {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      flex-wrap: wrap;
+    }
+
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-md);
+    }
+
+    .form-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-md);
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: #ffffff;
+      font-size: var(--fs-body-sm);
+      color: var(--color-ink);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+      box-sizing: border-box;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px var(--color-primary-tint);
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--color-border-subtle);
+      margin: var(--space-md) 0;
+    }
+
+    .required-star {
+      color: var(--color-danger);
+    }
+
+    .profile-actions-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    @media (max-width: 768px) {
+      .form-grid-2,
+      .form-grid-3 {
+        grid-template-columns: 1fr;
+      }
+      .profile-header-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+
+  <% if (user.role === 'donor') { %>
+    <script>
+      (function () {
+        var donorTypeSelect = document.getElementById('donorType');
+        var orgField = document.getElementById('orgNameField');
+        if (donorTypeSelect && orgField) {
+          donorTypeSelect.addEventListener('change', function () {
+            orgField.style.display = this.value === 'individual' ? 'none' : 'block';
+          });
+        }
+      })();
+    </script>
+  <% } %>
+</body>
+</html>

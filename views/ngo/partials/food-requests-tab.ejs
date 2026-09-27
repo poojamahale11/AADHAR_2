@@ -1,0 +1,103 @@
+<div class="tab-content">
+  <div class="section-header">
+    <h2>🍛 Pending Food Requests</h2>
+    <p class="muted">Match food requests with available donations and assign volunteers</p>
+  </div>
+
+  <% if (foodRequests.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">✓</div>
+      <h3>All requests assigned!</h3>
+      <p>There are no pending food requests at the moment.</p>
+    </div>
+  <% } else { %>
+    <div class="items-grid">
+      <% foodRequests.forEach(request => { %>
+        <div class="item-card">
+          <div class="item-header">
+            <span class="item-code">REQ-<%= request._id.toString().slice(-6).toUpperCase() %></span>
+            <span class="pill pill-<%= request.status %>"><%= request.status.replace('_', ' ') %></span>
+          </div>
+
+          <div class="item-body">
+            <div class="item-row">
+              <span class="item-label">👥 Household:</span>
+              <span class="item-value"><%= request.householdId.name %></span>
+            </div>
+            
+            <div class="item-row">
+              <span class="item-label">📊 Request:</span>
+              <span class="item-value">
+                <%= request.numberOfPeople || 2 %> <%= request.numberOfPeople === 1 ? 'person' : 'people' %>
+                - <%= request.foodPreference === 'veg' ? '🥗 Veg' : '🍗 Non-Veg' %>
+              </span>
+            </div>
+
+            <div class="item-row">
+              <span class="item-label">📍 Delivery:</span>
+              <span class="item-value"><%= request.deliveryAddress %></span>
+            </div>
+
+            <div class="item-row">
+              <span class="item-label">📞 Contact:</span>
+              <span class="item-value"><%= request.phone %></span>
+            </div>
+
+            <% if (request.deliveryNote) { %>
+              <div class="item-row">
+                <span class="item-label">📝 Notes:</span>
+                <span class="item-value"><%= request.deliveryNote %></span>
+              </div>
+            <% } %>
+
+            <div class="item-row">
+              <span class="item-label">📅 Requested:</span>
+              <span class="item-value"><%= new Date(request.createdAt).toLocaleString() %></span>
+            </div>
+          </div>
+
+          <!-- Show matching available donations -->
+          <% const matchingDonations = donations.filter(d => d.status === 'pending' && d.type === 'food'); %>
+          <% if (matchingDonations.length > 0) { %>
+            <div class="matching-donations">
+              <div class="match-label">🔗 <%= matchingDonations.length %> available donation<%= matchingDonations.length > 1 ? 's' : '' %> can be matched</div>
+            </div>
+          <% } else { %>
+            <div class="no-match">
+              <div class="match-label">⚠️ No available donations yet</div>
+            </div>
+          <% } %>
+
+          <div class="item-actions">
+            <a href="/admin/food-requests/<%= request._id %>/assign" class="btn btn-primary btn-sm">
+              Assign Volunteer & Donation
+            </a>
+            <a href="/admin/food-requests/<%= request._id %>" class="btn btn-outline btn-sm">View Details</a>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+</div>
+
+<style>
+  .matching-donations {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: var(--radius-md);
+    padding: var(--space-sm);
+    margin-bottom: var(--space-md);
+  }
+  .no-match {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-md);
+    padding: var(--space-sm);
+    margin-bottom: var(--space-md);
+  }
+  .match-label {
+    font-size: var(--fs-body-sm);
+    font-weight: 600;
+    text-align: center;
+  }
+</style>

@@ -9,6 +9,9 @@ router.use(requireRole('ngo_admin'));
 
 router.get('/dashboard', asyncHandler(ngoController.getOverview));
 
+// Comprehensive Management View
+router.get('/manage', asyncHandler(ngoController.getManagementView));
+
 // Donations
 router.get('/donations', asyncHandler(ngoController.getDonationsList));
 router.get('/donations/:id/assign', asyncHandler(ngoController.getAssignDonation));
@@ -27,8 +30,9 @@ router.post('/volunteers/:id/reject', asyncHandler(ngoController.postRejectVolun
 router.post('/volunteers/:id/deactivate', asyncHandler(ngoController.postDeactivateVolunteer));
 router.post('/volunteers/:id/reactivate', asyncHandler(ngoController.postReactivateVolunteer));
 
-// Logistics
+// Logistics and Tracking
 router.get('/logistics', asyncHandler(ngoController.getLogistics));
+router.get('/api/tracking', asyncHandler(ngoController.getTrackingData)); // Real-time tracking API
 
 // Transparency — tracking lookup
 router.get('/track', asyncHandler(ngoController.getTrack));

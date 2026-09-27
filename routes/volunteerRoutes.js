@@ -16,6 +16,7 @@ router.use((req, res, next) => {
 });
 
 router.get('/dashboard', asyncHandler(volunteerController.getDashboard));
+router.post('/availability', asyncHandler(volunteerController.postUpdateAvailability));
 
 router.post('/tasks/:id/accept', asyncHandler(volunteerController.postAcceptTask));
 router.post('/tasks/:id/reject', asyncHandler(volunteerController.postRejectTask));
@@ -27,5 +28,9 @@ router.get('/tasks/:id/deliver', asyncHandler(volunteerController.getDeliverForm
 router.post('/tasks/:id/deliver', uploadDelivery, asyncHandler(volunteerController.postDeliver));
 
 router.get('/feedback', asyncHandler(volunteerController.getMyFeedback));
+
+// Real-time tracking API endpoints
+router.post('/location/update', asyncHandler(volunteerController.postUpdateLocation));
+router.get('/delivery/active', asyncHandler(volunteerController.getActiveDelivery));
 
 module.exports = router;

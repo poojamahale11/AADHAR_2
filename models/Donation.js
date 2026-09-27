@@ -3,6 +3,7 @@ const { generateDonationCode } = require('../utils/donationCode');
 
 const DONATION_TYPES = ['food'];
 const DONATION_STATUSES = ['pending', 'assigned', 'accepted', 'pickup_reached', 'picked', 'in_transit', 'delivered', 'cancelled'];
+const RECIPIENT_TYPES = ['elderly_couple', 'other_needy']; // New: recipient type categorization
 
 const donationSchema = new mongoose.Schema(
   {
@@ -36,10 +37,28 @@ const donationSchema = new mongoose.Schema(
     // Ties together multiple items submitted in one bulk-donation form (hotels/events)
     bulkGroupId: { type: String, default: null, index: true },
 
-    // Set by NGO admin in Phase 3 (assignment) and volunteer actions in Phase 4
+    // Assignment details
     assignedVolunteerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     assignedByNgoId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     deliveryProofPhoto: { type: String, default: null },
+
+    // New: Recipient details for assignment
+    recipientType: { type: String, enum: RECIPIENT_TYPES, default: null }, // 'elderly_couple' or 'other_needy'
+    
+    // For elderly_couple: reference to FoodRequest
+    assignedFoodRequestId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodRequest', default: null },
+    
+    // For other_needy: custom recipient details
+    customRecipient: {
+      name: { type: String, trim: true, default: null }, // Person/Group/Place name
+      contactPerson: { type: String, trim: true, default: null },
+      phone: { type: String, trim: true, default: null },
+      address: { type: String, trim: true, default: null },
+      lat: { type: Number, default: null },
+      lng: { type: Number, default: null },
+      requiredDateTime: { type: Date, default: null }, // When they need the food
+      notes: { type: String, trim: true, maxlength: 500, default: '' },
+    },
 
     statusHistory: [
       {
@@ -53,6 +72,8 @@ const donationSchema = new mongoose.Schema(
 );
 
 donationSchema.index({ 'pickupLocation.lat': 1, 'pickupLocation.lng': 1 });
+donationSchema.index({ 'customRecipient.lat': 1, 'customRecipient.lng': 1 });
+donationSchema.index({ recipientType: 1, status: 1 });
 
 // Assign a unique donationCode and seed statusHistory before the very first save.
 donationSchema.pre('validate', async function (next) {
@@ -86,6 +107,7 @@ donationSchema.post('save', async function (doc) {
 
 donationSchema.statics.TYPES = DONATION_TYPES;
 donationSchema.statics.STATUSES = DONATION_STATUSES;
+donationSchema.statics.RECIPIENT_TYPES = RECIPIENT_TYPES;
 
 const Donation = mongoose.model('Donation', donationSchema);
 module.exports = Donation;

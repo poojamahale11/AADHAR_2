@@ -163,3 +163,12 @@ module.exports = {
   emitEmergencyAlert,
   emitPublicImpactUpdate,
 };
+
+
+/** Notify specific donor about delivery completion with feedback */
+function emitDonorNotification(donorId, notification) {
+  if (!ioInstance) return;
+  ioInstance.to(`user:${donorId}`).emit('donor:notification', notification);
+}
+
+module.exports.emitDonorNotification = emitDonorNotification;

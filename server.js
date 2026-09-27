@@ -5,6 +5,8 @@ const path = require('path');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const mongoSanitize = require('express-mongo-sanitize');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const http = require('http');
 
 const connectDB = require('./config/db');
@@ -44,12 +46,39 @@ app.use(
         // 'unsafe-inline' is needed because views use inline <script>/<style>
         // blocks throughout rather than a nonce pipeline — a reasonable
         // trade-off for a server-rendered EJS app at this scale.
-        scriptSrc: ["'self'", "'unsafe-inline'", 'https://maps.googleapis.com', 'https://www.google.com', 'https://www.gstatic.com'],
+        scriptSrc: [
+          "'self'", 
+          "'unsafe-inline'", 
+          'https://maps.googleapis.com', 
+          'https://www.google.com', 
+          'https://www.gstatic.com',
+          'https://accounts.google.com',
+        ],
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-        imgSrc: ["'self'", 'data:', 'https://maps.gstatic.com', 'https://maps.googleapis.com', 'https://*.google.com', 'https://*.googleusercontent.com'],
-        frameSrc: ["'self'", 'https://www.google.com', 'https://www.google.com/maps/', 'https://maps.google.com'],
-        connectSrc: ["'self'", 'https://maps.googleapis.com', 'ws:', 'wss:'],
+        imgSrc: [
+          "'self'", 
+          'data:', 
+          'https://maps.gstatic.com', 
+          'https://maps.googleapis.com', 
+          'https://*.google.com', 
+          'https://*.googleusercontent.com',
+          'https://*.ggpht.com', // Google profile images
+        ],
+        frameSrc: [
+          "'self'", 
+          'https://www.google.com', 
+          'https://www.google.com/maps/', 
+          'https://maps.google.com',
+          'https://accounts.google.com',
+        ],
+        connectSrc: [
+          "'self'", 
+          'https://maps.googleapis.com', 
+          'https://accounts.google.com',
+          'ws:', 
+          'wss:',
+        ],
       },
     },
   })
@@ -58,6 +87,29 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(mongoSanitize()); // strips $ and . from req.body/query/params to block NoSQL injection
+
+// Session middleware for Google OAuth
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || process.env.COOKIE_SECRET || 'aadhar_session_secret_change_me',
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_URI,
+      touchAfter: 24 * 3600, // Lazy session update (24 hours)
+    }),
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+  })
+);
+
+// Initialize Passport for Google OAuth
+const passport = require('./config/passport');
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -83,6 +135,7 @@ app.use((req, res, next) => {
 // ---------------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------------
+app.use('/', require('./routes/googleAuthRoutes')); // Google OAuth routes
 app.use('/', require('./routes/publicRoutes'));
 app.use('/api/public', require('./routes/api/publicRoutes'));
 app.use('/', require('./routes/authRoutes'));

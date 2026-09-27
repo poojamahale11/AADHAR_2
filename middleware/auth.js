@@ -5,24 +5,42 @@ const { LIONS_CLUB_ADMIN } = require('../utils/lionsClub');
 /**
  * Verifies the JWT from the httpOnly cookie and attaches the full user
  * document (minus passwordHash) to req.user. If no valid token is present,
- * req.user stays undefined and the request continues — individual routes
- * decide whether that's acceptable via requireAuth/requireRole.
+ * checks for Passport session (OAuth). If neither exists, req.user stays 
+ * undefined and the request continues — individual routes decide whether 
+ * that's acceptable via requireAuth/requireRole.
  */
 async function attachUser(req, res, next) {
   try {
+    // First, try JWT authentication (existing method)
     const token = req.cookies?.[COOKIE_NAME];
-    if (!token) return next();
-
-    const decoded = verifyToken(token);
-    const user = await User.findById(decoded.id);
-    if (user && user.isActive) {
-      req.user = user;
-      res.locals.currentUser = user; // available in every EJS view
+    if (token) {
+      try {
+        const decoded = verifyToken(token);
+        const user = await User.findById(decoded.id);
+        if (user && user.isActive) {
+          req.user = user;
+          res.locals.currentUser = user; // available in every EJS view
+          return next();
+        }
+      } catch (err) {
+        // Invalid/expired JWT token
+        res.clearCookie(COOKIE_NAME);
+      }
     }
+
+    // Second, check for Passport session (OAuth authentication)
+    if (req.isAuthenticated && req.isAuthenticated()) {
+      const user = req.user;
+      if (user && user.isActive) {
+        res.locals.currentUser = user;
+        return next();
+      }
+    }
+
+    // No authentication found - continue as guest
     return next();
   } catch (err) {
-    // Invalid/expired token — treat as logged out, don't crash the request
-    res.clearCookie(COOKIE_NAME);
+    console.error('[auth] attachUser error:', err);
     return next();
   }
 }
@@ -66,4 +84,35 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { attachUser, requireAuth, requireRole };
+/**
+ * Logout helper that clears both JWT cookies and Passport sessions
+ * Use this in logout routes to ensure complete logout for all auth types
+ */
+function performLogout(req, res, callback) {
+  // Clear JWT cookie
+  res.clearCookie(COOKIE_NAME);
+  
+  // Clear Passport session if it exists
+  if (req.logout) {
+    req.logout((err) => {
+      if (err) {
+        console.error('[auth] Passport logout error:', err);
+      }
+      // Destroy session completely
+      if (req.session) {
+        req.session.destroy((err) => {
+          if (err) {
+            console.error('[auth] Session destroy error:', err);
+          }
+          callback();
+        });
+      } else {
+        callback();
+      }
+    });
+  } else {
+    callback();
+  }
+}
+
+module.exports = { attachUser, requireAuth, requireRole, performLogout };

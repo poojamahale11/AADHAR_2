@@ -1,0 +1,268 @@
+<div class="tab-content">
+  <div class="section-header">
+    <div>
+      <h2>📜 Complete History</h2>
+      <p class="muted">All completed donations and food requests with full tracking</p>
+    </div>
+    <div class="filters">
+      <select id="typeFilter" class="filter-select" onchange="filterHistory()">
+        <option value="all">All Types</option>
+        <option value="donation">Donations</option>
+        <option value="foodRequest">Food Requests</option>
+      </select>
+      <select id="timeFilter" class="filter-select" onchange="filterHistory()">
+        <option value="all">All Time</option>
+        <option value="today">Today</option>
+        <option value="week">This Week</option>
+        <option value="month">This Month</option>
+      </select>
+    </div>
+  </div>
+
+  <% if (completedItems.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">📦</div>
+      <h3>No completed deliveries yet</h3>
+      <p>Completed donations and food requests will appear here.</p>
+    </div>
+  <% } else { %>
+    <div class="history-table-container">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Code/ID</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Details</th>
+            <th>Volunteer</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% completedItems.forEach(item => { %>
+            <tr class="history-row" data-type="<%= item.type %>" data-date="<%= item.completedDate.getTime() %>">
+              <td class="date-cell">
+                <%= item.completedDate.toLocaleDateString() %><br>
+                <span class="time-text"><%= item.completedDate.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'}) %></span>
+              </td>
+              <td>
+                <span class="type-badge <%= item.type === 'donation' ? 'type-donation' : 'type-food' %>">
+                  <%= item.type === 'donation' ? '📦 Donation' : '🍛 Food Request' %>
+                </span>
+              </td>
+              <td class="code-cell"><%= item.code %></td>
+              <td>
+                <div class="participant">
+                  <div class="participant-name"><%= item.from.name %></div>
+                  <div class="participant-detail"><%= item.from.phone %></div>
+                </div>
+              </td>
+              <td>
+                <div class="participant">
+                  <div class="participant-name"><%= item.to.name %></div>
+                  <div class="participant-detail"><%= item.to.address ? item.to.address.substring(0, 30) + '...' : 'N/A' %></div>
+                </div>
+              </td>
+              <td>
+                <div class="details-cell">
+                  <%= item.details %>
+                </div>
+              </td>
+              <td>
+                <div class="participant">
+                  <div class="participant-name"><%= item.volunteer.name %></div>
+                  <div class="participant-detail"><%= item.volunteer.phone %></div>
+                </div>
+              </td>
+              <td>
+                <span class="pill pill-delivered">✓ Delivered</span>
+              </td>
+              <td class="actions-cell">
+                <a href="<%= item.viewUrl %>" class="btn-icon" title="View Details">👁️</a>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="history-summary">
+      <div class="summary-card">
+        <div class="summary-label">Total Completed</div>
+        <div class="summary-value"><%= completedItems.length %></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Donations Delivered</div>
+        <div class="summary-value"><%= completedItems.filter(i => i.type === 'donation').length %></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Food Requests Fulfilled</div>
+        <div class="summary-value"><%= completedItems.filter(i => i.type === 'foodRequest').length %></div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Unique Volunteers</div>
+        <div class="summary-value"><%= new Set(completedItems.map(i => i.volunteer.id)).size %></div>
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<style>
+  .filters {
+    display: flex;
+    gap: var(--space-sm);
+  }
+  .filter-select {
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: var(--fs-body-sm);
+    background: var(--color-surface);
+  }
+  .history-table-container {
+    overflow-x: auto;
+    margin-bottom: var(--space-xl);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+  }
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--color-surface);
+  }
+  .history-table thead {
+    background: var(--color-surface-alt);
+  }
+  .history-table th {
+    padding: var(--space-md);
+    text-align: left;
+    font-weight: 700;
+    font-size: var(--fs-body-sm);
+    color: var(--color-muted);
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--color-border);
+  }
+  .history-table td {
+    padding: var(--space-md);
+    border-bottom: 1px solid var(--color-border-subtle);
+    font-size: var(--fs-body-sm);
+  }
+  .history-row:hover {
+    background: var(--color-surface-alt);
+  }
+  .date-cell {
+    white-space: nowrap;
+  }
+  .time-text {
+    color: var(--color-muted);
+    font-size: var(--fs-caption);
+  }
+  .type-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: var(--fs-caption);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .type-donation {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+  .type-food {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  .code-cell {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--color-primary);
+  }
+  .participant {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .participant-name {
+    font-weight: 600;
+  }
+  .participant-detail {
+    color: var(--color-muted);
+    font-size: var(--fs-caption);
+  }
+  .details-cell {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .actions-cell {
+    text-align: center;
+  }
+  .btn-icon {
+    display: inline-block;
+    font-size: 1.2rem;
+    text-decoration: none;
+    transition: transform var(--transition-fast);
+  }
+  .btn-icon:hover {
+    transform: scale(1.2);
+  }
+  .history-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-md);
+    padding: var(--space-lg);
+    background: var(--color-surface-alt);
+    border-radius: var(--radius-lg);
+  }
+  .summary-card {
+    text-align: center;
+  }
+  .summary-label {
+    font-size: var(--fs-body-sm);
+    color: var(--color-muted);
+    margin-bottom: var(--space-xs);
+  }
+  .summary-value {
+    font-size: var(--fs-display-md);
+    font-weight: 700;
+    color: var(--color-primary);
+    font-family: var(--font-display);
+  }
+</style>
+
+<script>
+function filterHistory() {
+  const typeFilter = document.getElementById('typeFilter').value;
+  const timeFilter = document.getElementById('timeFilter').value;
+  const rows = document.querySelectorAll('.history-row');
+  
+  const now = new Date().getTime();
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const oneWeekMs = 7 * oneDayMs;
+  const oneMonthMs = 30 * oneDayMs;
+  
+  rows.forEach(row => {
+    const rowType = row.dataset.type;
+    const rowDate = parseInt(row.dataset.date);
+    
+    let typeMatch = typeFilter === 'all' || rowType === typeFilter;
+    let timeMatch = true;
+    
+    if (timeFilter === 'today') {
+      timeMatch = (now - rowDate) < oneDayMs;
+    } else if (timeFilter === 'week') {
+      timeMatch = (now - rowDate) < oneWeekMs;
+    } else if (timeFilter === 'month') {
+      timeMatch = (now - rowDate) < oneMonthMs;
+    }
+    
+    row.style.display = (typeMatch && timeMatch) ? '' : 'none';
+  });
+}
+</script>

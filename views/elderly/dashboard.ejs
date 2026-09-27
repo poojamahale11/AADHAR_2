@@ -10,7 +10,10 @@
         <h1>Welcome, <%= household.name %></h1>
         <p class="muted">We will use your saved home address for delivery unless you update it on a request.</p>
       </div>
-      <a href="/elderly/requests/new" class="btn btn-primary">Request food delivery</a>
+      <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
+        <a href="/elderly/requests/new" class="btn btn-primary">Request food delivery</a>
+        <a href="/profile" class="btn btn-outline">👤 Edit Profile</a>
+      </div>
     </div>
 
     <% if (typeof requested !== 'undefined' && requested) { %>
@@ -26,7 +29,11 @@
           <% requests.forEach(function(request) { %>
             <article class="request-row">
               <div>
-                <strong><%= request.requirements %></strong>
+                <% if (request.numberOfPeople && request.foodPreference) { %>
+                  <strong>Food for <%= request.numberOfPeople %> <%= request.numberOfPeople === 1 ? 'person' : 'people' %> - <%= request.foodPreference === 'veg' ? '🥗 Vegetarian' : '🍗 Non-Vegetarian' %></strong>
+                <% } else { %>
+                  <strong><%= request.requirements %></strong>
+                <% } %>
                 <p class="muted"><%= request.deliveryAddress %></p>
                 <small class="muted"><%= request.createdAt.toLocaleDateString() %></small>
               </div>

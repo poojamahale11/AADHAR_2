@@ -12,8 +12,9 @@
         <p class="muted mb-0"><%= currentUser.organizationName %></p>
       </div>
       <div class="donor-dash-actions" id="dash-actions">
+        <a href="/admin/manage" class="btn btn-primary" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); box-shadow: 0 4px 12px rgba(220,38,38,0.3);">📊 Open Management Center</a>
         <% if (stats.pendingFoodRequests > 0) { %>
-          <a href="/admin/food-requests" class="btn btn-primary" style="background: var(--color-success); box-shadow: 0 4px 12px rgba(76,175,80,0.3);">🍛 <%= stats.pendingFoodRequests %> pending food request<%= stats.pendingFoodRequests > 1 ? 's' : '' %></a>
+          <a href="/admin/manage?tab=food-requests" class="btn btn-primary" style="background: var(--color-success); box-shadow: 0 4px 12px rgba(76,175,80,0.3);">🍛 <%= stats.pendingFoodRequests %> pending food request<%= stats.pendingFoodRequests > 1 ? 's' : '' %></a>
         <% } %>
         <% if (stats.pendingApprovals > 0) { %>
           <a href="/admin/volunteers?tab=pending" class="btn btn-outline" id="pending-approvals-btn">👥 <%= stats.pendingApprovals %> pending approval<%= stats.pendingApprovals > 1 ? 's' : '' %></a>
@@ -21,6 +22,7 @@
         <% if (stats.activeAlerts > 0) { %>
           <a href="/admin/emergency" class="btn btn-primary" style="background: var(--color-danger); box-shadow: 0 4px 12px rgba(217,56,41,0.3);">🚨 <%= stats.activeAlerts %> active alert<%= stats.activeAlerts > 1 ? 's' : '' %></a>
         <% } %>
+        <a href="/profile" class="btn btn-outline">👤 Edit Profile</a>
       </div>
     </div>
 

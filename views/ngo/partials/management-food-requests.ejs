@@ -1,0 +1,562 @@
+<section class="section-card">
+  <div class="section-header">
+    <div class="section-title">
+      <span class="icon">🍛</span>
+      <span>All Food Requests</span>
+      <span class="section-count"><%= foodRequests.length %></span>
+    </div>
+    <div class="section-actions">
+      <select id="request-filter" class="filter-select">
+        <option value="all">All Status</option>
+        <option value="pending">Pending</option>
+        <option value="assigned">Assigned</option>
+        <option value="in-progress">In Progress</option>
+        <option value="delivered">Delivered</option>
+      </select>
+      <select id="request-sort" class="filter-select">
+        <option value="urgency">Urgency (Oldest First)</option>
+        <option value="newest">Newest First</option>
+        <option value="people-desc">Most People</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="food-requests-list" id="food-requests-list">
+    <% if (foodRequests.length === 0) { %>
+      <div class="empty-state">
+        <span class="empty-icon">🍛</span>
+        <p>No food requests found</p>
+      </div>
+    <% } else { %>
+      <% foodRequests.forEach(request => { 
+        const requestAge = Math.floor((new Date() - new Date(request.createdAt)) / (1000 * 60 * 60)); // hours
+        const isUrgent = request.status === 'pending' && requestAge > 24;
+        const isCritical = request.status === 'pending' && requestAge > 48;
+      %>
+        <div class="food-request-item <%= isCritical ? 'critical' : isUrgent ? 'urgent' : '' %>" 
+             data-status="<%= request.status %>"
+             data-date="<%= new Date(request.createdAt).getTime() %>"
+             data-people="<%= request.numberOfPeople || 2 %>">
+          
+          <!-- Request Header -->
+          <div class="item-header">
+            <div class="item-title-row">
+              <div class="code-badge request-badge">REQ-<%= request._id.toString().slice(-6).toUpperCase() %></div>
+              <div class="status-pill status-<%= request.status %>">
+                <%= request.status.replace(/_/g, ' ') %>
+              </div>
+              <% if (isCritical) { %>
+                <div class="urgency-badge critical">🚨 CRITICAL</div>
+              <% } else if (isUrgent) { %>
+                <div class="urgency-badge urgent">⚠️ URGENT</div>
+              <% } %>
+              <% if (request.isRegularRequester) { %>
+                <div class="regular-badge" title="Regular Requester - <%= request.elderlyTotalRequests %> total requests">
+                  👵 Regular Requester
+                </div>
+              <% } %>
+            </div>
+            <div class="request-age">
+              Requested <%= requestAge < 1 ? 'less than 1 hour' : requestAge === 1 ? '1 hour' : requestAge + ' hours' %> ago
+            </div>
+          </div>
+
+          <!-- Request Details -->
+          <div class="item-body">
+            <div class="detail-grid">
+              
+              <!-- Elderly Couple Info -->
+              <div class="detail-section">
+                <div class="detail-label">👵 Elderly Couple</div>
+                <div class="detail-value">
+                  <strong><%= request.householdId ? request.householdId.name : 'Unknown' %></strong>
+                  <% if (request.householdId && request.householdId.partnerName) { %>
+                    <div class="detail-meta">& <%= request.householdId.partnerName %></div>
+                  <% } %>
+                  <% if (request.householdId && request.householdId.phone) { %>
+                    <div class="detail-meta">📞 <%= request.householdId.phone %></div>
+                  <% } %>
+                  <% if (request.isRegularRequester) { %>
+                    <div class="detail-meta text-info">
+                      📊 <%= request.elderlyTotalRequests %> total requests
+                    </div>
+                  <% } %>
+                </div>
+              </div>
+
+              <!-- Food Requirements -->
+              <div class="detail-section">
+                <div class="detail-label">🍽️ Food Requirements</div>
+                <div class="detail-value">
+                  <div class="food-requirement-box">
+                    <div class="requirement-item">
+                      <span class="requirement-icon">👥</span>
+                      <strong><%= request.numberOfPeople || 2 %> People</strong>
+                    </div>
+                    <div class="requirement-item">
+                      <% if (request.foodPreference === 'veg') { %>
+                        <span class="requirement-icon">🥗</span>
+                        <strong>Vegetarian</strong>
+                      <% } else { %>
+                        <span class="requirement-icon">🍖</span>
+                        <strong>Non-Vegetarian</strong>
+                      <% } %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Delivery Address -->
+              <div class="detail-section">
+                <div class="detail-label">📍 Delivery Address</div>
+                <div class="detail-value">
+                  <%= request.deliveryAddress || (request.householdId ? request.householdId.homeAddress : 'Not specified') %>
+                </div>
+              </div>
+
+              <!-- Request Time -->
+              <div class="detail-section">
+                <div class="detail-label">🕐 Requested On</div>
+                <div class="detail-value">
+                  <strong><%= new Date(request.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) %></strong>
+                  <div class="detail-meta">
+                    <%= new Date(request.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) %>
+                  </div>
+                  <% if (requestAge >= 1) { %>
+                    <div class="detail-meta <%= isCritical ? 'text-danger' : isUrgent ? 'text-warning' : '' %>">
+                      <%= requestAge %> hours ago
+                    </div>
+                  <% } %>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Matching Donations Indicator -->
+            <% if (request.status === 'pending' && donations && donations.length > 0) { 
+              const matchingDonations = donations.filter(d => d.status === 'pending');
+            %>
+              <% if (matchingDonations.length > 0) { %>
+                <div class="matching-donations-alert">
+                  <span class="alert-icon">💡</span>
+                  <div class="alert-content">
+                    <strong><%= matchingDonations.length %> pending donation<%= matchingDonations.length > 1 ? 's' : '' %> available</strong>
+                    <div class="alert-meta">You can assign one of these donations to this request</div>
+                  </div>
+                </div>
+              <% } else { %>
+                <div class="matching-donations-alert no-match">
+                  <span class="alert-icon">⚠️</span>
+                  <div class="alert-content">
+                    <strong>No pending donations available</strong>
+                    <div class="alert-meta">Wait for new donations or use Lions Club food collection</div>
+                  </div>
+                </div>
+              <% } %>
+            <% } %>
+
+            <!-- Complete Flow Visualization -->
+            <% if (request.status !== 'pending') { %>
+              <div class="flow-visualization">
+                <div class="flow-title">Complete Flow:</div>
+                <div class="flow-chain">
+                  <div class="flow-node completed">
+                    <div class="flow-icon">👵</div>
+                    <div class="flow-label">Elderly Couple</div>
+                    <div class="flow-name"><%= request.householdId ? request.householdId.name : 'Unknown' %></div>
+                  </div>
+                  <div class="flow-arrow">→</div>
+                  <div class="flow-node completed">
+                    <div class="flow-icon">🍛</div>
+                    <div class="flow-label">Food Request</div>
+                    <div class="flow-name"><%= request.numberOfPeople %> people</div>
+                  </div>
+                  <div class="flow-arrow">→</div>
+                  <div class="flow-node <%= request.assignedDonation ? 'completed' : 'pending' %>">
+                    <div class="flow-icon">📦</div>
+                    <div class="flow-label">Donation</div>
+                    <div class="flow-name">
+                      <%= request.assignedDonation ? request.assignedDonation.donationCode : 'Not Assigned' %>
+                    </div>
+                  </div>
+                  <div class="flow-arrow">→</div>
+                  <div class="flow-node <%= request.volunteer ? 'completed' : 'pending' %>">
+                    <div class="flow-icon">🚶</div>
+                    <div class="flow-label">Volunteer</div>
+                    <div class="flow-name">
+                      <%= request.volunteer ? request.volunteer.name : 'Not Assigned' %>
+                    </div>
+                  </div>
+                  <div class="flow-arrow">→</div>
+                  <div class="flow-node <%= request.status === 'delivered' ? 'completed' : 'in-progress' %>">
+                    <div class="flow-icon">✅</div>
+                    <div class="flow-label">Delivery</div>
+                    <div class="flow-name"><%= request.deliveryStatus || request.status %></div>
+                  </div>
+                </div>
+              </div>
+            <% } %>
+
+            <!-- Assignment Info -->
+            <% if (request.volunteer) { %>
+              <div class="assignment-info">
+                <div class="assignment-label">🚶 Assigned Volunteer:</div>
+                <div class="assignment-details">
+                  <strong><%= request.volunteer.name %></strong>
+                  <span class="detail-meta">📞 <%= request.volunteer.phone %></span>
+                </div>
+              </div>
+            <% } %>
+
+            <% if (request.assignedDonation) { %>
+              <div class="assignment-info">
+                <div class="assignment-label">📦 Assigned Donation:</div>
+                <div class="assignment-details">
+                  <strong><%= request.assignedDonation.donationCode %></strong>
+                  <span class="detail-meta">
+                    <%= request.assignedDonation.type %> - <%= request.assignedDonation.quantity %> <%= request.assignedDonation.unit || 'units' %>
+                  </span>
+                  <% if (request.assignedDonation.donorId) { %>
+                    <span class="detail-meta">From: <%= request.assignedDonation.donorId.name %></span>
+                  <% } %>
+                </div>
+              </div>
+            <% } %>
+
+          </div>
+
+          <!-- Request Actions -->
+          <div class="item-actions">
+            <% if (request.status === 'pending') { %>
+              <a href="/admin/food-requests/<%= request._id %>/assign" class="btn btn-sm btn-primary">
+                Assign Volunteer & Donation
+              </a>
+            <% } else { %>
+              <button class="btn btn-sm btn-outline" onclick="viewRequestDetails('<%= request._id %>')">
+                View Details
+              </button>
+            <% } %>
+            <% if (request.task) { %>
+              <a href="/admin/logistics?task=<%= request.task._id %>" class="btn btn-sm btn-outline">
+                Track Delivery
+              </a>
+            <% } %>
+          </div>
+
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+</section>
+
+<style>
+  .food-requests-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    max-height: 800px;
+    overflow-y: auto;
+    padding-right: var(--space-xs);
+  }
+
+  .food-request-item {
+    background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    transition: all var(--transition-fast);
+  }
+
+  .food-request-item:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-md);
+  }
+
+  .food-request-item.urgent {
+    border-color: #f59e0b;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  }
+
+  .food-request-item.critical {
+    border-color: #ef4444;
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    animation: criticalPulse 2s infinite;
+  }
+
+  @keyframes criticalPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  }
+
+  .request-badge {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  }
+
+  .urgency-badge {
+    padding: 0.3em 0.7em;
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+
+  .urgency-badge.urgent {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #f59e0b;
+  }
+
+  .urgency-badge.critical {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #ef4444;
+    animation: blink 1s infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .request-age {
+    font-size: var(--fs-body-xs);
+    color: var(--color-muted);
+    margin-top: var(--space-xs);
+    font-weight: 600;
+  }
+
+  .text-info {
+    color: #0284c7 !important;
+    font-weight: 600;
+  }
+
+  .text-warning {
+    color: #f59e0b !important;
+    font-weight: 700;
+  }
+
+  .text-danger {
+    color: #ef4444 !important;
+    font-weight: 700;
+  }
+
+  /* Food Requirements Box */
+  .food-requirement-box {
+    display: flex;
+    gap: var(--space-md);
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1px solid #86efac;
+    border-radius: var(--radius-sm);
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .requirement-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+
+  .requirement-icon {
+    font-size: 1.2rem;
+  }
+
+  /* Matching Donations Alert */
+  .matching-donations-alert {
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border: 2px solid #10b981;
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+  }
+
+  .matching-donations-alert.no-match {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-color: #f59e0b;
+  }
+
+  .alert-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .alert-content {
+    flex: 1;
+  }
+
+  .alert-content strong {
+    color: #166534;
+    font-size: var(--fs-body-sm);
+  }
+
+  .matching-donations-alert.no-match .alert-content strong {
+    color: #92400e;
+  }
+
+  .alert-meta {
+    font-size: var(--fs-body-xs);
+    color: var(--color-muted);
+    margin-top: 0.2em;
+  }
+
+  /* Flow Visualization - reuse from donations */
+  .flow-visualization {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #7dd3fc;
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin-top: var(--space-sm);
+  }
+
+  .flow-title {
+    font-size: var(--fs-body-xs);
+    font-weight: 700;
+    color: #0c4a6e;
+    margin-bottom: var(--space-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .flow-chain {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    overflow-x: auto;
+    padding: var(--space-xs) 0;
+  }
+
+  .flow-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2em;
+    padding: var(--space-sm);
+    background: white;
+    border: 2px solid #cbd5e1;
+    border-radius: var(--radius-md);
+    min-width: 90px;
+    text-align: center;
+    transition: all var(--transition-fast);
+  }
+
+  .flow-node.completed {
+    border-color: #22c55e;
+    background: #f0fdf4;
+  }
+
+  .flow-node.in-progress {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    animation: pulse 2s infinite;
+  }
+
+  .flow-node.pending {
+    border-color: #e5e7eb;
+    background: #f9fafb;
+    opacity: 0.6;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+  }
+
+  .flow-icon {
+    font-size: 1.5rem;
+  }
+
+  .flow-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--color-muted);
+    text-transform: uppercase;
+  }
+
+  .flow-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    word-break: break-word;
+  }
+
+  .flow-arrow {
+    font-size: 1.2rem;
+    color: var(--color-muted);
+    flex-shrink: 0;
+  }
+
+  /* Scrollbar Styling */
+  .food-requests-list::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .food-requests-list::-webkit-scrollbar-track {
+    background: var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+  }
+
+  .food-requests-list::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: var(--radius-sm);
+  }
+
+  .food-requests-list::-webkit-scrollbar-thumb:hover {
+    background: var(--color-muted);
+  }
+</style>
+
+<script>
+  // Filter food requests by status
+  document.getElementById('request-filter').addEventListener('change', function() {
+    const filterValue = this.value;
+    const items = document.querySelectorAll('.food-request-item');
+    
+    items.forEach(item => {
+      const status = item.dataset.status;
+      let show = false;
+      
+      if (filterValue === 'all') {
+        show = true;
+      } else if (filterValue === 'pending') {
+        show = status === 'pending';
+      } else if (filterValue === 'assigned') {
+        show = status === 'assigned';
+      } else if (filterValue === 'in-progress') {
+        show = ['accepted', 'pickup_reached', 'picked', 'in_transit'].includes(status);
+      } else if (filterValue === 'delivered') {
+        show = status === 'delivered';
+      }
+      
+      item.style.display = show ? 'block' : 'none';
+    });
+  });
+
+  // Sort food requests
+  document.getElementById('request-sort').addEventListener('change', function() {
+    const sortValue = this.value;
+    const container = document.getElementById('food-requests-list');
+    const items = Array.from(container.querySelectorAll('.food-request-item'));
+    
+    items.sort((a, b) => {
+      if (sortValue === 'urgency') {
+        // Oldest first (most urgent)
+        return parseInt(a.dataset.date) - parseInt(b.dataset.date);
+      } else if (sortValue === 'newest') {
+        // Newest first
+        return parseInt(b.dataset.date) - parseInt(a.dataset.date);
+      } else if (sortValue === 'people-desc') {
+        // Most people first
+        return parseInt(b.dataset.people) - parseInt(a.dataset.people);
+      }
+      return 0;
+    });
+    
+    items.forEach(item => container.appendChild(item));
+  });
+
+  // View request details
+  function viewRequestDetails(requestId) {
+    window.location.href = `/admin/food-requests/${requestId}/assign`;
+  }
+</script>

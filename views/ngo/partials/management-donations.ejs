@@ -1,0 +1,552 @@
+<section class="section-card">
+  <div class="section-header">
+    <div class="section-title">
+      <span class="icon">📦</span>
+      <span>All Donations</span>
+      <span class="section-count"><%= donations.length %></span>
+    </div>
+    <div class="section-actions">
+      <select id="donation-filter" class="filter-select">
+        <option value="all">All Status</option>
+        <option value="pending">Pending</option>
+        <option value="assigned">Assigned</option>
+        <option value="in-progress">In Progress</option>
+        <option value="delivered">Delivered</option>
+      </select>
+      <select id="donation-sort" class="filter-select">
+        <option value="date-asc">Date: Earliest First</option>
+        <option value="date-desc">Date: Latest First</option>
+        <option value="quantity-desc">Quantity: High to Low</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="donations-list" id="donations-list">
+    <% if (donations.length === 0) { %>
+      <div class="empty-state">
+        <span class="empty-icon">📦</span>
+        <p>No donations found</p>
+      </div>
+    <% } else { %>
+      <% donations.forEach(donation => { %>
+        <div class="donation-item" 
+             data-status="<%= donation.status %>"
+             data-date="<%= new Date(donation.timeSlot.date).getTime() %>"
+             data-quantity="<%= donation.quantity %>">
+          
+          <!-- Donation Header -->
+          <div class="item-header">
+            <div class="item-title-row">
+              <div class="code-badge"><%= donation.donationCode %></div>
+              <div class="status-pill status-<%= donation.status %>">
+                <%= donation.status.replace(/_/g, ' ') %>
+              </div>
+              <% if (donation.isRegularDonor) { %>
+                <div class="regular-badge" title="Regular Donor - <%= donation.donorTotalDonations %> total donations">
+                  ⭐ Regular Donor
+                </div>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Donation Details -->
+          <div class="item-body">
+            <div class="detail-grid">
+              
+              <!-- Donor Info -->
+              <div class="detail-section">
+                <div class="detail-label">👤 Donor</div>
+                <div class="detail-value">
+                  <strong><%= donation.donorId ? donation.donorId.name : 'Unknown' %></strong>
+                  <% if (donation.donorId) { %>
+                    <div class="detail-meta">📞 <%= donation.donorId.phone %></div>
+                  <% } %>
+                  <% if (donation.isRegularDonor) { %>
+                    <div class="detail-meta text-success">
+                      ⭐ <%= donation.donorTotalDonations %> total donations
+                    </div>
+                  <% } %>
+                </div>
+              </div>
+
+              <!-- Donation Info -->
+              <div class="detail-section">
+                <div class="detail-label">📦 Donation</div>
+                <div class="detail-value">
+                  <strong style="text-transform: capitalize;"><%= donation.type %></strong>
+                  <div class="detail-meta"><%= donation.quantity %> <%= donation.unit || 'units' %></div>
+                  <% if (donation.description) { %>
+                    <div class="detail-meta"><%= donation.description %></div>
+                  <% } %>
+                </div>
+              </div>
+
+              <!-- Pickup Location -->
+              <div class="detail-section">
+                <div class="detail-label">📍 Pickup Location</div>
+                <div class="detail-value">
+                  <%= donation.pickupLocation.address %>
+                </div>
+              </div>
+
+              <!-- Pickup Time -->
+              <div class="detail-section">
+                <div class="detail-label">🕐 Pickup Time</div>
+                <div class="detail-value">
+                  <strong><%= new Date(donation.timeSlot.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) %></strong>
+                  <div class="detail-meta">
+                    <%= donation.timeSlot.startTime %> - <%= donation.timeSlot.endTime %>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Complete Flow Visualization -->
+            <% if (donation.status !== 'pending') { %>
+              <div class="flow-visualization">
+                <div class="flow-title">Complete Flow:</div>
+                <div class="flow-chain">
+                  <div class="flow-node completed">
+                    <div class="flow-icon">👤</div>
+                    <div class="flow-label">Donor</div>
+                    <div class="flow-name"><%= donation.donorId ? donation.donorId.name : 'Unknown' %></div>
+                  </div>
+                  <div class="flow-arrow">→</div>
+                  <div class="flow-node completed">
+                    <div class="flow-icon">📦</div>
+                    <div class="flow-label">Donation</div>
+                    <div class="flow-name"><%= donation.donationCode %></div>
+                  </div>
+                  <div class="flow-arrow">→</div>
+                  <div class="flow-node <%= donation.volunteer ? 'completed' : 'pending' %>">
+                    <div class="flow-icon">🚶</div>
+                    <div class="flow-label">Volunteer</div>
+                    <div class="flow-name">
+                      <%= donation.volunteer ? donation.volunteer.name : 'Not Assigned' %>
+                    </div>
+                  </div>
+                  <div class="flow-arrow">→</div>
+                  <div class="flow-node <%= donation.beneficiary ? 'completed' : 'pending' %>">
+                    <div class="flow-icon">👵</div>
+                    <div class="flow-label">Receiver</div>
+                    <div class="flow-name">
+                      <%= donation.beneficiary ? donation.beneficiary.name : 'Not Assigned' %>
+                    </div>
+                  </div>
+                  <div class="flow-arrow">→</div>
+                  <div class="flow-node <%= donation.status === 'delivered' ? 'completed' : 'in-progress' %>">
+                    <div class="flow-icon">✅</div>
+                    <div class="flow-label">Status</div>
+                    <div class="flow-name"><%= donation.deliveryStatus || donation.status %></div>
+                  </div>
+                </div>
+              </div>
+            <% } %>
+
+            <!-- Assignment Info -->
+            <% if (donation.volunteer) { %>
+              <div class="assignment-info">
+                <div class="assignment-label">🚶 Assigned Volunteer:</div>
+                <div class="assignment-details">
+                  <strong><%= donation.volunteer.name %></strong>
+                  <span class="detail-meta">📞 <%= donation.volunteer.phone %></span>
+                </div>
+              </div>
+            <% } %>
+
+            <% if (donation.beneficiary) { %>
+              <div class="assignment-info">
+                <div class="assignment-label">👵 Assigned Receiver:</div>
+                <div class="assignment-details">
+                  <strong><%= donation.beneficiary.name %></strong>
+                  <% if (donation.beneficiary.partnerName) { %>
+                    <span class="detail-meta">& <%= donation.beneficiary.partnerName %></span>
+                  <% } %>
+                  <% if (donation.beneficiary.homeAddress) { %>
+                    <div class="detail-meta">📍 <%= donation.beneficiary.homeAddress %></div>
+                  <% } %>
+                </div>
+              </div>
+            <% } %>
+
+          </div>
+
+          <!-- Donation Actions -->
+          <div class="item-actions">
+            <% if (donation.status === 'pending') { %>
+              <a href="/admin/donations/<%= donation._id %>/assign" class="btn btn-sm btn-primary">
+                Assign Volunteer
+              </a>
+            <% } else { %>
+              <button class="btn btn-sm btn-outline" onclick="viewDonationDetails('<%= donation._id %>')">
+                View Details
+              </button>
+            <% } %>
+            <% if (donation.task) { %>
+              <a href="/admin/logistics?task=<%= donation.task._id %>" class="btn btn-sm btn-outline">
+                Track Delivery
+              </a>
+            <% } %>
+          </div>
+
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+</section>
+
+<style>
+  .donations-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    max-height: 800px;
+    overflow-y: auto;
+    padding-right: var(--space-xs);
+  }
+
+  .donation-item {
+    background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    transition: all var(--transition-fast);
+  }
+
+  .donation-item:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-md);
+  }
+
+  .item-header {
+    margin-bottom: var(--space-md);
+  }
+
+  .item-title-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+  }
+
+  .code-badge {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    background: var(--color-ink);
+    color: white;
+    padding: 0.3em 0.7em;
+    border-radius: var(--radius-sm);
+  }
+
+  .status-pill {
+    padding: 0.3em 0.8em;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .status-pending {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .status-assigned, .status-accepted {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  .status-pickup_reached, .status-picked, .status-in_transit {
+    background: #e0e7ff;
+    color: #4338ca;
+  }
+
+  .status-delivered {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .status-cancelled {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .regular-badge {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    padding: 0.3em 0.7em;
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-weight: 700;
+    border: 1px solid #fbbf24;
+  }
+
+  .item-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-md);
+  }
+
+  .detail-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .detail-label {
+    font-size: var(--fs-body-xs);
+    font-weight: 700;
+    color: var(--color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .detail-value {
+    font-size: var(--fs-body-sm);
+    color: var(--color-ink);
+  }
+
+  .detail-meta {
+    font-size: var(--fs-body-xs);
+    color: var(--color-muted);
+    margin-top: 0.2em;
+  }
+
+  .text-success {
+    color: #16a34a !important;
+    font-weight: 600;
+  }
+
+  /* Flow Visualization */
+  .flow-visualization {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #7dd3fc;
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin-top: var(--space-sm);
+  }
+
+  .flow-title {
+    font-size: var(--fs-body-xs);
+    font-weight: 700;
+    color: #0c4a6e;
+    margin-bottom: var(--space-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .flow-chain {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    overflow-x: auto;
+    padding: var(--space-xs) 0;
+  }
+
+  .flow-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2em;
+    padding: var(--space-sm);
+    background: white;
+    border: 2px solid #cbd5e1;
+    border-radius: var(--radius-md);
+    min-width: 90px;
+    text-align: center;
+    transition: all var(--transition-fast);
+  }
+
+  .flow-node.completed {
+    border-color: #22c55e;
+    background: #f0fdf4;
+  }
+
+  .flow-node.in-progress {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    animation: pulse 2s infinite;
+  }
+
+  .flow-node.pending {
+    border-color: #e5e7eb;
+    background: #f9fafb;
+    opacity: 0.6;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+  }
+
+  .flow-icon {
+    font-size: 1.5rem;
+  }
+
+  .flow-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--color-muted);
+    text-transform: uppercase;
+  }
+
+  .flow-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    word-break: break-word;
+  }
+
+  .flow-arrow {
+    font-size: 1.2rem;
+    color: var(--color-muted);
+    flex-shrink: 0;
+  }
+
+  /* Assignment Info */
+  .assignment-info {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: var(--radius-sm);
+    padding: var(--space-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .assignment-label {
+    font-size: var(--fs-body-xs);
+    font-weight: 700;
+    color: #166534;
+  }
+
+  .assignment-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+    flex: 1;
+  }
+
+  /* Item Actions */
+  .item-actions {
+    display: flex;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .btn-sm {
+    padding: var(--space-xs) var(--space-md);
+    font-size: var(--fs-body-sm);
+  }
+
+  /* Filter Select */
+  .filter-select {
+    padding: var(--space-xs) var(--space-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: var(--fs-body-sm);
+    background: white;
+    cursor: pointer;
+  }
+
+  .filter-select:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: var(--space-xl);
+    color: var(--color-muted);
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: var(--space-md);
+    opacity: 0.5;
+  }
+
+  /* Scrollbar Styling */
+  .donations-list::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .donations-list::-webkit-scrollbar-track {
+    background: var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+  }
+
+  .donations-list::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: var(--radius-sm);
+  }
+
+  .donations-list::-webkit-scrollbar-thumb:hover {
+    background: var(--color-muted);
+  }
+</style>
+
+<script>
+  // Filter donations by status
+  document.getElementById('donation-filter').addEventListener('change', function() {
+    const filterValue = this.value;
+    const items = document.querySelectorAll('.donation-item');
+    
+    items.forEach(item => {
+      const status = item.dataset.status;
+      let show = false;
+      
+      if (filterValue === 'all') {
+        show = true;
+      } else if (filterValue === 'pending') {
+        show = status === 'pending';
+      } else if (filterValue === 'assigned') {
+        show = status === 'assigned';
+      } else if (filterValue === 'in-progress') {
+        show = ['accepted', 'pickup_reached', 'picked', 'in_transit'].includes(status);
+      } else if (filterValue === 'delivered') {
+        show = status === 'delivered';
+      }
+      
+      item.style.display = show ? 'block' : 'none';
+    });
+  });
+
+  // Sort donations
+  document.getElementById('donation-sort').addEventListener('change', function() {
+    const sortValue = this.value;
+    const container = document.getElementById('donations-list');
+    const items = Array.from(container.querySelectorAll('.donation-item'));
+    
+    items.sort((a, b) => {
+      if (sortValue === 'date-asc') {
+        return parseInt(a.dataset.date) - parseInt(b.dataset.date);
+      } else if (sortValue === 'date-desc') {
+        return parseInt(b.dataset.date) - parseInt(a.dataset.date);
+      } else if (sortValue === 'quantity-desc') {
+        return parseFloat(b.dataset.quantity) - parseFloat(a.dataset.quantity);
+      }
+      return 0;
+    });
+    
+    items.forEach(item => container.appendChild(item));
+  });
+
+  // View donation details
+  function viewDonationDetails(donationId) {
+    window.location.href = `/admin/donations/${donationId}/assign`;
+  }
+</script>

@@ -23,7 +23,7 @@ const deliveryStorage = multer.diskStorage({
 });
 
 function deliveryFileFilter(req, file, cb) {
-  if (file.fieldname === 'proofPhoto') {
+  if (file.fieldname === 'proofPhoto' || file.fieldname === 'additionalPhotos') {
     return cb(null, ALLOWED_IMAGE_TYPES.includes(file.mimetype));
   }
   if (file.fieldname === 'voiceNote') {
@@ -38,6 +38,7 @@ const uploadDelivery = multer({
   limits: { fileSize: MAX_FILE_SIZE },
 }).fields([
   { name: 'proofPhoto', maxCount: 1 },
+  { name: 'additionalPhotos', maxCount: 5 }, // Up to 5 additional feedback photos
   { name: 'voiceNote', maxCount: 1 },
 ]);
 

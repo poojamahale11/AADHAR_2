@@ -19,6 +19,10 @@ router.post('/donations/bulk', asyncHandler(donorController.postBulkDonation));
 router.get('/donations', asyncHandler(donorController.getDonationsList));
 router.get('/donations/:id', asyncHandler(donorController.getDonationDetail));
 
+// Delivery History
+router.get('/deliveries', asyncHandler(donorController.getDeliveryHistory));
+router.get('/deliveries/:id', asyncHandler(donorController.getDeliveryDetail));
+
 router.get('/leaderboard', asyncHandler(donorController.getLeaderboard));
 router.get('/feedback', asyncHandler(donorController.getFeedback));
 

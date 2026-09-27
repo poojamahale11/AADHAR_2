@@ -1,0 +1,646 @@
+<section class="section-card">
+  <div class="section-header">
+    <div class="section-title">
+      <span class="icon">📜</span>
+      <span>Complete History</span>
+      <span class="section-count"><%= historyItems.length %></span>
+    </div>
+    <div class="section-actions">
+      <select id="history-type-filter" class="filter-select">
+        <option value="all">All Types</option>
+        <option value="donation">Donations</option>
+        <option value="foodRequest">Food Requests</option>
+      </select>
+      <select id="history-time-filter" class="filter-select">
+        <option value="all">All Time</option>
+        <option value="today">Today</option>
+        <option value="week">This Week</option>
+        <option value="month">This Month</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="history-list" id="history-list">
+    <% if (historyItems.length === 0) { %>
+      <div class="empty-state">
+        <span class="empty-icon">📜</span>
+        <p>No completed deliveries yet</p>
+      </div>
+    <% } else { %>
+      <div class="history-table">
+        <% historyItems.forEach(item => { 
+          const isDonation = item.type === 'donation';
+          const completedDate = new Date(item.completedDate);
+        %>
+          <div class="history-row" 
+               data-type="<%= item.type %>"
+               data-date="<%= completedDate.getTime() %>">
+            
+            <div class="history-main">
+              
+              <!-- Type & Code -->
+              <div class="history-cell">
+                <div class="cell-label">Type & Code</div>
+                <div class="cell-content">
+                  <div class="type-badge <%= isDonation ? 'donation-badge' : 'request-badge' %>">
+                    <%= isDonation ? '📦 Donation' : '🍛 Food Request' %>
+                  </div>
+                  <div class="code-display"><%= item.code %></div>
+                  <% if (isDonation && item.isRegularDonor) { %>
+                    <div class="mini-badge regular">⭐ Regular Donor</div>
+                  <% } else if (!isDonation && item.isRegularRequester) { %>
+                    <div class="mini-badge regular">👵 Regular Requester</div>
+                  <% } %>
+                </div>
+              </div>
+
+              <!-- From -->
+              <div class="history-cell">
+                <div class="cell-label">From</div>
+                <div class="cell-content">
+                  <% if (isDonation && item.donor) { %>
+                    <strong><%= item.donor.name %></strong>
+                    <div class="cell-meta">📞 <%= item.donor.phone %></div>
+                    <% if (item.isRegularDonor) { %>
+                      <div class="cell-meta text-success">
+                        <%= item.donorTotalDonations %> total donations
+                      </div>
+                    <% } %>
+                  <% } else if (!isDonation && item.elderlyCouple) { %>
+                    <strong><%= item.elderlyCouple.name %></strong>
+                    <% if (item.elderlyCouple.partnerName) { %>
+                      <div class="cell-meta">& <%= item.elderlyCouple.partnerName %></div>
+                    <% } %>
+                    <div class="cell-meta">📞 <%= item.elderlyCouple.phone %></div>
+                    <% if (item.isRegularRequester) { %>
+                      <div class="cell-meta text-info">
+                        <%= item.elderlyTotalRequests %> total requests
+                      </div>
+                    <% } %>
+                  <% } else { %>
+                    <span class="muted">N/A</span>
+                  <% } %>
+                </div>
+              </div>
+
+              <!-- Details -->
+              <div class="history-cell">
+                <div class="cell-label">Details</div>
+                <div class="cell-content">
+                  <strong><%= item.details %></strong>
+                  <% if (isDonation && item.description) { %>
+                    <div class="cell-meta"><%= item.description %></div>
+                  <% } %>
+                </div>
+              </div>
+
+              <!-- Volunteer -->
+              <div class="history-cell">
+                <div class="cell-label">Volunteer</div>
+                <div class="cell-content">
+                  <% if (item.volunteer) { %>
+                    <strong><%= item.volunteer.name %></strong>
+                    <div class="cell-meta">📞 <%= item.volunteer.phone %></div>
+                    <% if (item.volunteer.completedTasks) { %>
+                      <div class="cell-meta">✅ <%= item.volunteer.completedTasks %> deliveries</div>
+                    <% } %>
+                  <% } else { %>
+                    <span class="muted">Not Assigned</span>
+                  <% } %>
+                </div>
+              </div>
+
+              <!-- Delivered To -->
+              <div class="history-cell">
+                <div class="cell-label">Delivered To</div>
+                <div class="cell-content">
+                  <% if (item.beneficiary) { %>
+                    <strong><%= item.beneficiary.name %></strong>
+                    <% if (item.beneficiary.partnerName) { %>
+                      <div class="cell-meta">& <%= item.beneficiary.partnerName %></div>
+                    <% } %>
+                    <% if (item.deliveryLocation && item.deliveryLocation.address) { %>
+                      <div class="cell-meta">📍 <%= item.deliveryLocation.address %></div>
+                    <% } %>
+                  <% } else { %>
+                    <span class="muted">N/A</span>
+                  <% } %>
+                </div>
+              </div>
+
+              <!-- Date & Time -->
+              <div class="history-cell">
+                <div class="cell-label">Completed</div>
+                <div class="cell-content">
+                  <strong><%= completedDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) %></strong>
+                  <div class="cell-meta">
+                    <%= completedDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) %>
+                  </div>
+                  <div class="cell-meta">
+                    <%= Math.floor((new Date() - completedDate) / (1000 * 60 * 60 * 24)) %> days ago
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Expandable Details -->
+            <div class="history-expand">
+              <button class="expand-btn" onclick="toggleHistoryDetails(this)">
+                <span class="expand-icon">▼</span> View Full Details
+              </button>
+            </div>
+
+            <div class="history-details" style="display: none;">
+              
+              <!-- Complete Journey -->
+              <div class="journey-section">
+                <h4>Complete Journey:</h4>
+                <div class="journey-flow">
+                  <% if (isDonation) { %>
+                    <div class="journey-step">
+                      <span class="journey-icon">👤</span>
+                      <strong>Donor:</strong> <%= item.donor ? item.donor.name : 'Unknown' %>
+                    </div>
+                    <span class="journey-arrow">→</span>
+                    <div class="journey-step">
+                      <span class="journey-icon">📦</span>
+                      <strong>Donation:</strong> <%= item.code %>
+                    </div>
+                  <% } else { %>
+                    <div class="journey-step">
+                      <span class="journey-icon">👵</span>
+                      <strong>Elderly:</strong> <%= item.elderlyCouple ? item.elderlyCouple.name : 'Unknown' %>
+                    </div>
+                    <span class="journey-arrow">→</span>
+                    <div class="journey-step">
+                      <span class="journey-icon">🍛</span>
+                      <strong>Request:</strong> <%= item.details %>
+                    </div>
+                  <% } %>
+                  <span class="journey-arrow">→</span>
+                  <div class="journey-step">
+                    <span class="journey-icon">🚶</span>
+                    <strong>Volunteer:</strong> <%= item.volunteer ? item.volunteer.name : 'N/A' %>
+                  </div>
+                  <span class="journey-arrow">→</span>
+                  <div class="journey-step">
+                    <span class="journey-icon">👵</span>
+                    <strong>Receiver:</strong> <%= item.beneficiary ? item.beneficiary.name : 'N/A' %>
+                  </div>
+                  <span class="journey-arrow">→</span>
+                  <div class="journey-step success">
+                    <span class="journey-icon">✅</span>
+                    <strong>Delivered</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Status History Timeline -->
+              <% if (item.statusHistory && item.statusHistory.length > 0) { %>
+                <div class="status-history-section">
+                  <h4>Status History:</h4>
+                  <div class="status-history-list">
+                    <% item.statusHistory.forEach((history, index) => { %>
+                      <div class="status-history-item">
+                        <div class="status-history-dot"></div>
+                        <div class="status-history-content">
+                          <div class="status-history-status">
+                            <%= isDonation ? history.status : history.to %>
+                          </div>
+                          <div class="status-history-time">
+                            <%= new Date(isDonation ? history.changedAt : history.timestamp).toLocaleString('en-IN') %>
+                          </div>
+                          <% if (history.note) { %>
+                            <div class="status-history-note"><%= history.note %></div>
+                          <% } %>
+                        </div>
+                      </div>
+                    <% }) %>
+                  </div>
+                </div>
+              <% } %>
+
+              <!-- Additional Details -->
+              <div class="additional-details-grid">
+                <% if (isDonation) { %>
+                  <div class="detail-box">
+                    <strong>Pickup Location:</strong>
+                    <p><%= item.pickupLocation ? item.pickupLocation.address : 'N/A' %></p>
+                  </div>
+                  <% if (item.timeSlot) { %>
+                    <div class="detail-box">
+                      <strong>Pickup Time Slot:</strong>
+                      <p>
+                        <%= new Date(item.timeSlot.date).toLocaleDateString('en-IN') %>
+                        <%= item.timeSlot.startTime %> - <%= item.timeSlot.endTime %>
+                      </p>
+                    </div>
+                  <% } %>
+                <% } else { %>
+                  <div class="detail-box">
+                    <strong>Delivery Address:</strong>
+                    <p><%= item.deliveryAddress || 'N/A' %></p>
+                  </div>
+                  <div class="detail-box">
+                    <strong>Requested On:</strong>
+                    <p><%= new Date(item.requestedAt).toLocaleString('en-IN') %></p>
+                  </div>
+                <% } %>
+              </div>
+
+            </div>
+
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<style>
+  .history-list {
+    max-height: 800px;
+    overflow-y: auto;
+    padding-right: var(--space-xs);
+  }
+
+  .history-table {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .history-row {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: all var(--transition-fast);
+  }
+
+  .history-row:hover {
+    border-color: var(--color-primary-light);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .history-main {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-md);
+    padding: var(--space-md);
+  }
+
+  .history-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3em;
+  }
+
+  .cell-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    letter-spacing: 0.5px;
+  }
+
+  .cell-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+  }
+
+  .cell-content strong {
+    font-size: var(--fs-body-sm);
+    color: var(--color-ink);
+  }
+
+  .cell-meta {
+    font-size: 0.7rem;
+    color: var(--color-muted);
+  }
+
+  .text-success {
+    color: #16a34a !important;
+    font-weight: 600;
+  }
+
+  .text-info {
+    color: #0284c7 !important;
+    font-weight: 600;
+  }
+
+  .type-badge {
+    padding: 0.3em 0.6em;
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: inline-block;
+    margin-bottom: 0.2em;
+  }
+
+  .donation-badge {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #1e40af;
+  }
+
+  .request-badge {
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+    color: #166534;
+  }
+
+  .code-display {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-ink);
+  }
+
+  .mini-badge {
+    font-size: 0.65rem;
+    padding: 0.2em 0.5em;
+    border-radius: var(--radius-full);
+    font-weight: 700;
+  }
+
+  .mini-badge.regular {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  /* Expandable Section */
+  .history-expand {
+    padding: var(--space-xs) var(--space-md);
+    background: var(--color-surface-alt);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .expand-btn {
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    font-size: var(--fs-body-sm);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs);
+    transition: all var(--transition-fast);
+  }
+
+  .expand-btn:hover {
+    color: var(--color-primary-dark);
+  }
+
+  .expand-icon {
+    transition: transform var(--transition-fast);
+    display: inline-block;
+  }
+
+  .expand-btn.expanded .expand-icon {
+    transform: rotate(180deg);
+  }
+
+  .history-details {
+    padding: var(--space-lg);
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-top: 2px solid var(--color-border);
+  }
+
+  /* Journey Section */
+  .journey-section {
+    margin-bottom: var(--space-lg);
+  }
+
+  .journey-section h4 {
+    font-size: var(--fs-body-sm);
+    font-weight: 700;
+    color: var(--color-ink);
+    margin-bottom: var(--space-sm);
+  }
+
+  .journey-flow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    overflow-x: auto;
+    padding: var(--space-md);
+    background: white;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+  }
+
+  .journey-step {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    background: #f9fafb;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .journey-step.success {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #166534;
+  }
+
+  .journey-icon {
+    font-size: 1.2rem;
+  }
+
+  .journey-arrow {
+    font-size: 1.2rem;
+    color: var(--color-muted);
+    flex-shrink: 0;
+  }
+
+  /* Status History */
+  .status-history-section {
+    margin-bottom: var(--space-lg);
+  }
+
+  .status-history-section h4 {
+    font-size: var(--fs-body-sm);
+    font-weight: 700;
+    color: var(--color-ink);
+    margin-bottom: var(--space-sm);
+  }
+
+  .status-history-list {
+    background: white;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    padding: var(--space-md);
+  }
+
+  .status-history-item {
+    display: flex;
+    gap: var(--space-sm);
+    padding: var(--space-sm) 0;
+    border-left: 2px solid var(--color-border);
+    padding-left: var(--space-md);
+    position: relative;
+  }
+
+  .status-history-item:last-child {
+    border-left-color: transparent;
+  }
+
+  .status-history-dot {
+    position: absolute;
+    left: -6px;
+    top: var(--space-sm);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #22c55e;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px #22c55e;
+  }
+
+  .status-history-content {
+    flex: 1;
+  }
+
+  .status-history-status {
+    font-size: var(--fs-body-sm);
+    font-weight: 700;
+    color: var(--color-ink);
+    text-transform: capitalize;
+  }
+
+  .status-history-time {
+    font-size: 0.7rem;
+    color: var(--color-muted);
+    margin-top: 0.2em;
+  }
+
+  .status-history-note {
+    font-size: 0.75rem;
+    color: var(--color-muted);
+    font-style: italic;
+    margin-top: 0.3em;
+  }
+
+  /* Additional Details */
+  .additional-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-md);
+  }
+
+  .detail-box {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-md);
+  }
+
+  .detail-box strong {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-muted);
+    margin-bottom: 0.3em;
+  }
+
+  .detail-box p {
+    font-size: var(--fs-body-sm);
+    color: var(--color-ink);
+    margin: 0;
+  }
+
+  /* Scrollbar */
+  .history-list::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .history-list::-webkit-scrollbar-track {
+    background: var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+  }
+
+  .history-list::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: var(--radius-sm);
+  }
+
+  .history-list::-webkit-scrollbar-thumb:hover {
+    background: var(--color-muted);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .history-main {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  // Filter by type
+  document.getElementById('history-type-filter').addEventListener('change', function() {
+    filterHistory();
+  });
+
+  // Filter by time
+  document.getElementById('history-time-filter').addEventListener('change', function() {
+    filterHistory();
+  });
+
+  function filterHistory() {
+    const typeFilter = document.getElementById('history-type-filter').value;
+    const timeFilter = document.getElementById('history-time-filter').value;
+    const now = new Date();
+    const items = document.querySelectorAll('.history-row');
+
+    items.forEach(item => {
+      const type = item.dataset.type;
+      const date = new Date(parseInt(item.dataset.date));
+      
+      // Type filter
+      let typeMatch = typeFilter === 'all' || type === typeFilter;
+      
+      // Time filter
+      let timeMatch = true;
+      if (timeFilter === 'today') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        timeMatch = date >= today;
+      } else if (timeFilter === 'week') {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        timeMatch = date >= weekAgo;
+      } else if (timeFilter === 'month') {
+        const monthAgo = new Date();
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        timeMatch = date >= monthAgo;
+      }
+      
+      item.style.display = (typeMatch && timeMatch) ? 'block' : 'none';
+    });
+  }
+
+  // Toggle details
+  function toggleHistoryDetails(button) {
+    const row = button.closest('.history-row');
+    const details = row.querySelector('.history-details');
+    const isExpanded = details.style.display === 'block';
+    
+    if (isExpanded) {
+      details.style.display = 'none';
+      button.classList.remove('expanded');
+      button.innerHTML = '<span class="expand-icon">▼</span> View Full Details';
+    } else {
+      details.style.display = 'block';
+      button.classList.add('expanded');
+      button.innerHTML = '<span class="expand-icon">▼</span> Hide Details';
+    }
+  }
+</script>

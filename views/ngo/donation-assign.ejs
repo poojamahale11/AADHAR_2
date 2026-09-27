@@ -64,20 +64,38 @@
 
         <h2>Choose a Volunteer</h2>
         <% if (ranked.length === 0) { %>
-          <p class="muted">No approved, available volunteers right now. Approve someone from <a href="/admin/volunteers?tab=pending">pending volunteers</a> first.</p>
+          <p class="muted">No approved volunteers right now. Approve someone from <a href="/admin/volunteers?tab=pending">pending volunteers</a> first.</p>
         <% } else { %>
           <div class="volunteer-picker">
             <% ranked.forEach((r, i) => { %>
-              <label class="volunteer-option">
+              <label class="volunteer-option <%= r.volunteer.liveStatus === 'busy' ? 'opt-busy' : '' %>">
                 <input type="radio" name="volunteerId" value="<%= r.volunteer._id %>" <%= i === 0 ? 'checked' : '' %> required>
-                <div>
-                  <strong><%= r.volunteer.name %></strong>
-                  <span class="muted"> · <%= r.volunteer.phone %></span>
-                  <% if (r.volunteer.avgRating > 0) { %><span class="muted"> · ⭐ <%= r.volunteer.avgRating.toFixed(1) %></span><% } %>
-                  <% if (r.distanceKm != null) { %>
-                    <span class="pill pill-assigned"><%= r.distanceKm.toFixed(1) %> km<% if (r.durationMin != null) { %> · ~<%= r.durationMin %> min<% } %></span>
-                  <% } %>
-                  <% if (i === 0 && r.distanceKm != null) { %><span class="pill pill-delivered">Nearest</span><% } %>
+                <div style="flex: 1;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.3rem;">
+                    <div>
+                      <strong><%= r.volunteer.name %></strong>
+                      <span class="muted"> · <%= r.volunteer.phone %></span>
+                      <% if (r.volunteer.avgRating > 0) { %><span class="muted"> · ⭐ <%= r.volunteer.avgRating.toFixed(1) %></span><% } %>
+                    </div>
+                    <div style="display: flex; gap: 0.3rem; align-items: center;">
+                      <span class="pill <%= r.volunteer.statusBadgeClass %>" style="font-size: 0.75rem;">
+                        <%= r.volunteer.liveStatusLabel %>
+                      </span>
+                      <% if (r.distanceKm != null) { %>
+                        <span class="pill pill-assigned"><%= r.distanceKm.toFixed(1) %> km<% if (r.durationMin != null) { %> · ~<%= r.durationMin %> min<% } %></span>
+                      <% } %>
+                      <% if (i === 0 && r.distanceKm != null && r.volunteer.liveStatus === 'available') { %><span class="pill pill-delivered">Nearest Available</span><% } %>
+                    </div>
+                  </div>
+                  <div style="font-size: var(--fs-caption); margin-top: 0.25rem; color: var(--color-ink-soft);">
+                    <span>🗓️ <%= r.volunteer.scheduleDateText %></span>
+                    &nbsp;·&nbsp;
+                    <span>🕒 <%= r.volunteer.timeWindowText %></span>
+                    &nbsp;·&nbsp;
+                    <span class="<%= r.volunteer.liveStatus === 'busy' ? 'text-warning' : 'text-success' %>" style="font-weight: 600;">
+                      <%= r.volunteer.whenFreeText %>
+                    </span>
+                  </div>
                 </div>
               </label>
             <% }) %>

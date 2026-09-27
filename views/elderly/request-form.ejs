@@ -7,7 +7,7 @@
     <div class="page-heading">
       <div>
         <p class="eyebrow">Food support</p>
-        <h1>Tell us what you need</h1>
+        <h1>Request food delivery</h1>
         <p class="muted">A Lions Club volunteer will coordinate delivery to your home.</p>
       </div>
     </div>
@@ -19,29 +19,190 @@
     <% } %>
 
     <form action="/elderly/requests" method="POST" class="card request-form">
-      <div class="field">
-        <label for="requirements">What food do you need?</label>
-        <textarea id="requirements" name="requirements" rows="5" required maxlength="1000" placeholder="For example: rice, dal, vegetables, milk for two people"><%= formData && formData.requirements ? formData.requirements : '' %></textarea>
-        <div class="hint">Please include quantities, dietary needs, or allergies.</div>
+      <div class="form-row">
+        <div class="field">
+          <label for="numberOfPeople">How many people need food? <span class="required-star">*</span></label>
+          <input 
+            type="number" 
+            id="numberOfPeople" 
+            name="numberOfPeople" 
+            required 
+            min="1" 
+            max="20" 
+            value="<%= formData && formData.numberOfPeople ? formData.numberOfPeople : '2' %>"
+            class="form-input"
+          />
+          <div class="hint">Enter the number of people in your household.</div>
+        </div>
+
+        <div class="field">
+          <label>Food preference <span class="required-star">*</span></label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input 
+                type="radio" 
+                name="foodPreference" 
+                value="veg" 
+                <%= (!formData || !formData.foodPreference || formData.foodPreference === 'veg') ? 'checked' : '' %>
+                required
+              />
+              <span class="radio-label">
+                <span class="radio-icon">🥗</span>
+                <span>Vegetarian</span>
+              </span>
+            </label>
+            <label class="radio-option">
+              <input 
+                type="radio" 
+                name="foodPreference" 
+                value="non-veg" 
+                <%= (formData && formData.foodPreference === 'non-veg') ? 'checked' : '' %>
+                required
+              />
+              <span class="radio-label">
+                <span class="radio-icon">🍗</span>
+                <span>Non-Vegetarian</span>
+              </span>
+            </label>
+          </div>
+        </div>
       </div>
+
       <div class="field">
-        <label for="deliveryAddress">Home address for delivery</label>
-        <textarea id="deliveryAddress" name="deliveryAddress" rows="4" required maxlength="500" placeholder="House number, street, area, city"><%= formData && formData.deliveryAddress ? formData.deliveryAddress : '' %></textarea>
+        <label for="deliveryAddress">Home address for delivery <span class="required-star">*</span></label>
+        <textarea 
+          id="deliveryAddress" 
+          name="deliveryAddress" 
+          rows="4" 
+          required 
+          maxlength="500" 
+          placeholder="House number, street, area, city"
+          class="form-input"
+        ><%= formData && formData.deliveryAddress ? formData.deliveryAddress : '' %></textarea>
+        <div class="hint">This is where the volunteer will deliver your food.</div>
       </div>
+
       <div class="field">
-        <label for="deliveryNote">Additional note <span class="muted">(optional)</span></label>
-        <textarea id="deliveryNote" name="deliveryNote" rows="3" maxlength="500" placeholder="Landmark, preferred delivery time, or accessibility information"><%= formData && formData.deliveryNote ? formData.deliveryNote : '' %></textarea>
+        <label for="deliveryNote">Additional notes <span class="muted">(optional)</span></label>
+        <textarea 
+          id="deliveryNote" 
+          name="deliveryNote" 
+          rows="3" 
+          maxlength="500" 
+          placeholder="Landmark, preferred delivery time, or any special instructions"
+          class="form-input"
+        ><%= formData && formData.deliveryNote ? formData.deliveryNote : '' %></textarea>
+        <div class="hint">Any helpful information for the volunteer.</div>
       </div>
-      <button type="submit" class="btn btn-primary">Submit food request</button>
-      <a href="/elderly/dashboard" class="btn btn-outline">Cancel</a>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary btn-lg">Submit food request</button>
+        <a href="/elderly/dashboard" class="btn btn-outline btn-lg">Cancel</a>
+      </div>
     </form>
   </main>
   <%- include('../partials/footer') %>
   <style>
-    .elderly-page { max-width: 760px; padding: var(--space-xl) 0; }
-    .page-heading { margin-bottom: var(--space-lg); }
-    .eyebrow { color: var(--color-primary); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; font-size: var(--fs-caption); margin-bottom: var(--space-xs); }
-    .request-form .btn { margin-right: var(--space-sm); }
+    .elderly-page { 
+      max-width: 760px; 
+      padding: var(--space-xl) 0; 
+      margin: 0 auto;
+    }
+    .page-heading { 
+      margin-bottom: var(--space-lg); 
+    }
+    .eyebrow { 
+      color: var(--color-primary); 
+      font-weight: 700; 
+      text-transform: uppercase; 
+      letter-spacing: .08em; 
+      font-size: var(--fs-caption); 
+      margin-bottom: var(--space-xs); 
+    }
+    .request-form {
+      padding: var(--space-xl);
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-lg);
+      margin-bottom: var(--space-md);
+    }
+    .form-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: var(--fs-body);
+      background: #ffffff;
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px var(--color-primary-tint);
+    }
+    .required-star {
+      color: var(--color-danger);
+    }
+    .radio-group {
+      display: flex;
+      gap: var(--space-md);
+      margin-top: var(--space-xs);
+    }
+    .radio-option {
+      flex: 1;
+      cursor: pointer;
+    }
+    .radio-option input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .radio-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-xs);
+      padding: var(--space-md);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      transition: all var(--transition-fast);
+      font-weight: 600;
+      font-size: var(--fs-body-sm);
+    }
+    .radio-option:hover .radio-label {
+      border-color: var(--color-primary-light);
+      background: var(--color-primary-tint);
+    }
+    .radio-option input[type="radio"]:checked + .radio-label {
+      border-color: var(--color-primary);
+      background: var(--color-primary-tint);
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+    }
+    .radio-icon {
+      font-size: 2rem;
+    }
+    .form-actions {
+      display: flex;
+      gap: var(--space-md);
+      margin-top: var(--space-lg);
+    }
+    @media (max-width: 640px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+      .radio-group {
+        flex-direction: column;
+      }
+      .form-actions {
+        flex-direction: column;
+      }
+      .form-actions .btn {
+        width: 100%;
+      }
+    }
   </style>
 </body>
 </html>

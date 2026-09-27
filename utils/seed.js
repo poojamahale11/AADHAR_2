@@ -67,11 +67,56 @@ async function seedUsers() {
   });
 
   const volunteerSeeds = [
-    { name: 'Rohit Kulkarni', email: 'volunteer@aadhar.test', isApproved: true, isActive: true }, // primary demo login
-    { name: 'Sneha Patil', email: 'sneha.v@aadhar.test', isApproved: true, isActive: true },
-    { name: 'Aman Sheikh', email: 'aman.v@aadhar.test', isApproved: true, isActive: true },
-    { name: 'Kavita Joshi', email: 'kavita.v@aadhar.test', isApproved: false, isActive: true }, // pending approval
-    { name: 'Deepak Rao', email: 'deepak.v@aadhar.test', isApproved: true, isActive: false }, // deactivated
+    {
+      name: 'Rohit Kulkarni',
+      email: 'volunteer@aadhar.test',
+      isApproved: true,
+      isActive: true,
+      isAvailable: true,
+      availableDay: 'Weekdays (Mon-Fri)',
+      availableStartTime: '09:00',
+      availableEndTime: '18:00',
+    }, // primary demo login
+    {
+      name: 'Sneha Patil',
+      email: 'sneha.v@aadhar.test',
+      isApproved: true,
+      isActive: true,
+      isAvailable: true,
+      availableDay: 'All Days',
+      availableStartTime: '08:00',
+      availableEndTime: '16:00',
+    },
+    {
+      name: 'Aman Sheikh',
+      email: 'aman.v@aadhar.test',
+      isApproved: true,
+      isActive: true,
+      isAvailable: true,
+      availableDay: 'Weekends (Sat-Sun)',
+      availableStartTime: '10:00',
+      availableEndTime: '19:00',
+    },
+    {
+      name: 'Kavita Joshi',
+      email: 'kavita.v@aadhar.test',
+      isApproved: false,
+      isActive: true,
+      isAvailable: true,
+      availableDay: 'Monday',
+      availableStartTime: '09:30',
+      availableEndTime: '17:30',
+    }, // pending approval
+    {
+      name: 'Deepak Rao',
+      email: 'deepak.v@aadhar.test',
+      isApproved: true,
+      isActive: false,
+      isAvailable: false,
+      availableDay: 'All Days',
+      availableStartTime: '09:00',
+      availableEndTime: '17:00',
+    }, // deactivated
   ];
 
   const volunteers = [];
@@ -86,7 +131,11 @@ async function seedUsers() {
         ngoId: ngo._id,
         isApproved: v.isApproved,
         isActive: v.isActive,
-        isAvailable: true,
+        isAvailable: v.isAvailable,
+        availableDay: v.availableDay,
+        availableDate: null,
+        availableStartTime: v.availableStartTime,
+        availableEndTime: v.availableEndTime,
         location: { lat: jitter(BASE_LAT), lng: jitter(BASE_LNG), address: 'Nashik, Maharashtra' },
       })
     );
@@ -121,8 +170,8 @@ async function seedUsers() {
   return { ngo, volunteers, donors };
 }
 
-const APPROVED_TYPES = ['food', 'clothes', 'grocery', 'money', 'medicine', 'books', 'skill'];
-const UNITS = { food: 'kg', clothes: 'items', grocery: 'kg', money: 'INR', medicine: 'units', books: 'items', skill: 'hours' };
+const APPROVED_TYPES = Donation.TYPES;
+const UNITS = { food: 'plates' };
 
 function randomTimeSlot(daysAgo) {
   const date = new Date();
@@ -143,6 +192,7 @@ async function seedDonations({ ngo, volunteers, donors }) {
     donations.push(
       await Donation.create({
         donorId: donors[i % donors.length]._id,
+        ngoId: ngo._id,
         type,
         quantity: type === 'money' ? 1000 + i * 500 : 5 + i * 2,
         unit: UNITS[type],
@@ -159,6 +209,7 @@ async function seedDonations({ ngo, volunteers, donors }) {
     const type = nextType();
     const donation = await Donation.create({
       donorId: donors[(i + 2) % donors.length]._id,
+      ngoId: ngo._id,
       type,
       quantity: type === 'money' ? 800 : 6 + i,
       unit: UNITS[type],
@@ -183,6 +234,7 @@ async function seedDonations({ ngo, volunteers, donors }) {
     const type = nextType();
     const donation = await Donation.create({
       donorId: donors[(i + 4) % donors.length]._id,
+      ngoId: ngo._id,
       type,
       quantity: 4 + i,
       unit: UNITS[type],
@@ -199,9 +251,12 @@ async function seedDonations({ ngo, volunteers, donors }) {
     donation.assignedVolunteerId = volunteer._id;
     donation.assignedByNgoId = ngo._id;
     await updateDonationStatus(donation, 'assigned', `Assigned to ${volunteer.name}`);
+    await updateDonationStatus(donation, 'accepted', 'Volunteer accepted');
+    await updateDonationStatus(donation, 'pickup_reached', 'Volunteer reached pickup point');
     await updateDonationStatus(donation, 'picked', 'Picked up by volunteer');
     task.status = 'picked';
     task.acceptedAt = new Date();
+    task.pickupReachedAt = new Date();
     task.pickedAt = new Date();
     await task.save();
     donations.push(donation);
@@ -213,8 +268,9 @@ async function seedDonations({ ngo, volunteers, donors }) {
     const type = nextType();
     const donation = await Donation.create({
       donorId: donors[i % donors.length]._id,
+      ngoId: ngo._id,
       type,
-      quantity: type === 'money' ? 1200 : type === 'food' ? 15 + i : 6 + i,
+      quantity: 15 + i,
       unit: UNITS[type],
       pickupLocation: { address: `Pickup Point ${i + 14}, Nashik`, lat: jitter(BASE_LAT), lng: jitter(BASE_LNG) },
       timeSlot: randomTimeSlot(3 + i),
@@ -229,12 +285,17 @@ async function seedDonations({ ngo, volunteers, donors }) {
     donation.assignedVolunteerId = volunteer._id;
     donation.assignedByNgoId = ngo._id;
     await updateDonationStatus(donation, 'assigned', `Assigned to ${volunteer.name}`);
+    await updateDonationStatus(donation, 'accepted', 'Volunteer accepted');
+    await updateDonationStatus(donation, 'pickup_reached', 'Volunteer reached pickup');
     await updateDonationStatus(donation, 'picked', 'Picked up by volunteer');
+    await updateDonationStatus(donation, 'in_transit', 'Volunteer in transit');
     await updateDonationStatus(donation, 'delivered', 'Delivered and confirmed by OTP');
 
     task.status = 'delivered';
     task.acceptedAt = new Date();
+    task.pickupReachedAt = new Date();
     task.pickedAt = new Date();
+    task.inTransitAt = new Date();
     task.deliveredAt = new Date();
     task.deliveryOtpVerified = true;
     await task.save();
@@ -256,6 +317,7 @@ async function seedDonations({ ngo, volunteers, donors }) {
   const cancelledType = nextType();
   const cancelled = await Donation.create({
     donorId: donors[0]._id,
+    ngoId: ngo._id,
     type: cancelledType,
     quantity: 3,
     unit: UNITS[cancelledType],

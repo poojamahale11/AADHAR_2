@@ -16,11 +16,32 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required: true,
+      required: function() {
+        // Phone is not required for Google OAuth users initially
+        return !this.googleId;
+      },
       trim: true,
       match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number'],
     },
-    passwordHash: { type: String, required: true, select: false },
+    passwordHash: { 
+      type: String, 
+      required: function() {
+        // Password not required for Google OAuth users
+        return !this.googleId;
+      }, 
+      select: false 
+    },
+    googleId: { 
+      type: String, 
+      sparse: true, 
+      unique: true, 
+      index: true 
+    },
+    authProvider: {
+      type: String,
+      enum: ['local', 'google'],
+      default: 'local',
+    },
     isActive: { type: Boolean, default: true },
     profileImage: { type: String, default: null },
   },
@@ -33,6 +54,10 @@ const userSchema = new mongoose.Schema(
 // value is set automatically to the discriminator name on creation).
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
+  // Google OAuth users don't have passwords
+  if (this.authProvider === 'google' || !this.passwordHash) {
+    return false;
+  }
   return bcrypt.compare(candidatePassword, this.passwordHash);
 };
 
@@ -90,6 +115,10 @@ const Volunteer = User.discriminator(
     skills: [{ type: String, trim: true }], // for skill-volunteering module
     isApproved: { type: Boolean, default: false }, // NGO admin must approve
     isAvailable: { type: Boolean, default: true },
+    availableDay: { type: String, default: 'All Days', trim: true }, // e.g. 'Monday', 'Weekdays', 'All Days'
+    availableDate: { type: Date, default: null }, // specific date
+    availableStartTime: { type: String, default: '09:00', trim: true }, // '09:00' (24h)
+    availableEndTime: { type: String, default: '18:00', trim: true }, // '18:00' (24h)
     avgRating: { type: Number, default: 0 },
     ratingCount: { type: Number, default: 0 },
     completedTasks: { type: Number, default: 0 },

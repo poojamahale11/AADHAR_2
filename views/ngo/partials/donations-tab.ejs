@@ -1,0 +1,158 @@
+<div class="tab-content">
+  <div class="section-header">
+    <h2>📦 Pending Donations</h2>
+    <p class="muted">Donations waiting to be assigned to volunteers</p>
+  </div>
+
+  <% if (donations.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">✓</div>
+      <h3>All donations assigned!</h3>
+      <p>There are no pending donations at the moment.</p>
+    </div>
+  <% } else { %>
+    <div class="items-grid">
+      <% donations.forEach(donation => { %>
+        <div class="item-card">
+          <div class="item-header">
+            <span class="item-code"><%= donation.donationCode %></span>
+            <span class="pill pill-<%= donation.status %>"><%= donation.status.replace('_', ' ') %></span>
+          </div>
+
+          <div class="item-body">
+            <div class="item-row">
+              <span class="item-label">👤 Donor:</span>
+              <span class="item-value"><%= donation.donorId.name %></span>
+            </div>
+            
+            <div class="item-row">
+              <span class="item-label">📦 Item:</span>
+              <span class="item-value"><%= donation.type %> - <%= donation.quantity %> <%= donation.unit || 'units' %></span>
+            </div>
+
+            <% if (donation.description) { %>
+              <div class="item-row">
+                <span class="item-label">📝 Details:</span>
+                <span class="item-value"><%= donation.description %></span>
+              </div>
+            <% } %>
+
+            <div class="item-row">
+              <span class="item-label">📍 Pickup:</span>
+              <span class="item-value"><%= donation.pickupLocation.address %></span>
+            </div>
+
+            <div class="item-row">
+              <span class="item-label">📅 Date:</span>
+              <span class="item-value"><%= new Date(donation.timeSlot.date).toLocaleDateString() %> (<%= donation.timeSlot.startTime %> - <%= donation.timeSlot.endTime %>)</span>
+            </div>
+
+            <% if (donation.expiryDate) { %>
+              <div class="item-row">
+                <span class="item-label">⏰ Expires:</span>
+                <span class="item-value <%= new Date(donation.expiryDate) < new Date() ? 'text-danger' : '' %>">
+                  <%= new Date(donation.expiryDate).toLocaleDateString() %>
+                </span>
+              </div>
+            <% } %>
+          </div>
+
+          <div class="item-actions">
+            <a href="/admin/donations/<%= donation._id %>/assign" class="btn btn-primary btn-sm">Assign to Volunteer</a>
+            <a href="/admin/donations/<%= donation._id %>" class="btn btn-outline btn-sm">View Details</a>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+</div>
+
+<style>
+  .tab-content {
+    animation: fadeIn 0.3s ease-in;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .section-header {
+    margin-bottom: var(--space-lg);
+  }
+  .section-header h2 {
+    margin-bottom: var(--space-xs);
+  }
+  .empty-state {
+    text-align: center;
+    padding: var(--space-2xl);
+    background: var(--color-surface-alt);
+    border-radius: var(--radius-lg);
+  }
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: var(--space-md);
+  }
+  .items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: var(--space-lg);
+  }
+  .item-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  }
+  .item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  .item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .item-code {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: var(--fs-body-lg);
+    color: var(--color-primary);
+  }
+  .item-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+  }
+  .item-row {
+    display: flex;
+    gap: var(--space-sm);
+    font-size: var(--fs-body-sm);
+  }
+  .item-label {
+    font-weight: 600;
+    color: var(--color-muted);
+    min-width: 100px;
+    flex-shrink: 0;
+  }
+  .item-value {
+    color: var(--color-ink);
+  }
+  .text-danger {
+    color: var(--color-danger);
+    font-weight: 600;
+  }
+  .item-actions {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+  }
+  .item-actions .btn {
+    flex: 1;
+    min-width: 120px;
+  }
+</style>

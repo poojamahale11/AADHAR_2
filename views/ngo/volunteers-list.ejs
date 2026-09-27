@@ -6,48 +6,132 @@
   <main class="container list-page">
     <div class="form-page-head">
       <h1>Manage Volunteers</h1>
-      <p class="muted">Approve new signups, review ratings, and manage who's active.</p>
+      <p class="muted">Monitor all volunteers, live availability schedules, current assigned tasks, and when busy volunteers become free.</p>
     </div>
 
+    <!-- Filter Tabs with Live Counts -->
     <div class="filter-tabs">
-      <a href="/admin/volunteers?tab=pending" class="filter-tab <%= activeTab === 'pending' ? 'active' : '' %>">Pending Approval</a>
-      <a href="/admin/volunteers?tab=active" class="filter-tab <%= activeTab === 'active' ? 'active' : '' %>">Active</a>
-      <a href="/admin/volunteers?tab=inactive" class="filter-tab <%= activeTab === 'inactive' ? 'active' : '' %>">Inactive / Rejected</a>
+      <a href="/admin/volunteers?tab=all" class="filter-tab <%= activeTab === 'all' ? 'active' : '' %>">
+        All Volunteers <span class="tab-badge"><%= counts.all %></span>
+      </a>
+      <a href="/admin/volunteers?tab=available" class="filter-tab <%= activeTab === 'available' ? 'active' : '' %>">
+        🟢 Available Now <span class="tab-badge"><%= counts.available %></span>
+      </a>
+      <a href="/admin/volunteers?tab=busy" class="filter-tab <%= activeTab === 'busy' ? 'active' : '' %>">
+        🟠 Assigned / Busy <span class="tab-badge"><%= counts.busy %></span>
+      </a>
+      <a href="/admin/volunteers?tab=pending" class="filter-tab <%= activeTab === 'pending' ? 'active' : '' %>">
+        🟡 Pending Approval <span class="tab-badge"><%= counts.pending %></span>
+      </a>
+      <a href="/admin/volunteers?tab=inactive" class="filter-tab <%= activeTab === 'inactive' ? 'active' : '' %>">
+        🔴 Inactive <span class="tab-badge"><%= counts.inactive %></span>
+      </a>
     </div>
 
-    <% if (activeTab === 'pending') { %>
+    <% if (activeTab === 'pending' || activeTab === 'all') { %>
       <div id="live-banner" class="alert alert-success" style="display:none; cursor:pointer;" onclick="location.reload()">
         🔄 A new volunteer just signed up — click to refresh.
       </div>
     <% } %>
 
     <% if (volunteers.length === 0) { %>
-      <div class="card text-center"><p class="mb-0 muted">No volunteers in this list.</p></div>
+      <div class="card text-center" style="padding: var(--space-2xl);">
+        <p class="mb-0 muted" style="font-size: var(--fs-body-lg);">No volunteers found in this category.</p>
+      </div>
     <% } else { %>
-      <div class="donation-cards">
+      <div class="volunteer-cards-grid">
         <% volunteers.forEach(v => { %>
-          <div class="card">
-            <div class="section-heading" style="margin-bottom: var(--space-xs);">
-              <a href="/admin/volunteers/<%= v._id %>"><strong><%= v.name %></strong></a>
-              <% if (v.avgRating > 0) { %><span class="muted">⭐ <%= v.avgRating.toFixed(1) %> (<%= v.ratingCount %>)</span><% } %>
+          <div class="card volunteer-admin-card <%= v.liveStatus === 'busy' ? 'card-busy' : (v.liveStatus === 'available' ? 'card-available' : '') %>">
+            
+            <!-- Header: Name, Ratings & Live Status -->
+            <div class="volunteer-card-header">
+              <div>
+                <a href="/admin/volunteers/<%= v._id %>" class="volunteer-name-link">
+                  <h3><%= v.name %></h3>
+                </a>
+                <div class="contact-line">
+                  <span>✉️ <%= v.email %></span>
+                  <span>📞 <strong><%= v.phone %></strong></span>
+                </div>
+              </div>
+              <div class="header-badges">
+                <span class="pill <%= v.statusBadgeClass %>">
+                  <%= v.liveStatusLabel %>
+                </span>
+                <% if (v.avgRating > 0) { %>
+                  <span class="rating-badge">⭐ <%= v.avgRating.toFixed(1) %> (<%= v.ratingCount %>)</span>
+                <% } %>
+              </div>
             </div>
-            <p class="muted mb-0"><%= v.email %> · <%= v.phone %></p>
-            <p class="muted" style="font-size: var(--fs-caption);">Completed tasks: <%= v.completedTasks %></p>
 
-            <% if (activeTab === 'pending') { %>
-              <div class="row-actions">
-                <form method="POST" action="/admin/volunteers/<%= v._id %>/approve" class="inline-form"><button class="btn btn-primary btn-sm">Approve</button></form>
-                <form method="POST" action="/admin/volunteers/<%= v._id %>/reject" class="inline-form"><button class="btn btn-outline btn-sm">Reject</button></form>
+            <!-- Availability & Shift Details -->
+            <div class="schedule-details-box mt-sm">
+              <div class="schedule-row">
+                <span class="schedule-label">🗓️ Available Day / Date:</span>
+                <span class="schedule-value"><strong><%= v.scheduleDateText %></strong></span>
               </div>
-            <% } else if (activeTab === 'active') { %>
-              <div class="row-actions">
-                <form method="POST" action="/admin/volunteers/<%= v._id %>/deactivate" class="inline-form"><button class="btn btn-outline btn-sm">Deactivate</button></form>
+              <div class="schedule-row">
+                <span class="schedule-label">🕒 Working Hours:</span>
+                <span class="schedule-value"><strong><%= v.timeWindowText %></strong></span>
               </div>
-            <% } else { %>
-              <div class="row-actions">
-                <form method="POST" action="/admin/volunteers/<%= v._id %>/reactivate" class="inline-form"><button class="btn btn-outline btn-sm">Reactivate</button></form>
+              <div class="schedule-row">
+                <span class="schedule-label">ℹ️ Availability ETA:</span>
+                <span class="schedule-value <%= v.liveStatus === 'busy' ? 'text-warning' : 'text-success' %>">
+                  <%= v.whenFreeText %>
+                </span>
+              </div>
+            </div>
+
+            <!-- If Currently Assigned to a Task / Busy -->
+            <% if (v.activeTaskInfo) { %>
+              <div class="current-task-box mt-sm">
+                <div class="current-task-head">
+                  <span class="task-badge">🚀 Current Task in Progress</span>
+                  <span class="pill pill-<%= v.activeTaskInfo.taskStatus %>" style="font-size: 0.75rem;">
+                    <%= v.activeTaskInfo.taskStatusLabel %>
+                  </span>
+                </div>
+                <div class="task-info-content mt-xs">
+                  <p class="mb-0">
+                    <strong><%= v.activeTaskInfo.taskCode %></strong> (<%= v.activeTaskInfo.taskType %>)
+                  </p>
+                  <p class="mb-0 muted" style="font-size: var(--fs-caption);">
+                    📍 <strong>Pickup:</strong> <%= v.activeTaskInfo.pickupAddress %>
+                  </p>
+                  <p class="mb-0 muted" style="font-size: var(--fs-caption);">
+                    📍 <strong>Drop-off:</strong> <%= v.activeTaskInfo.deliveryAddress %>
+                  </p>
+                </div>
               </div>
             <% } %>
+
+            <!-- Footer Stats & Actions -->
+            <div class="volunteer-card-footer mt-md">
+              <span class="task-count-text">
+                ✅ <strong><%= v.completedTasks %></strong> tasks completed
+              </span>
+
+              <div class="row-actions">
+                <a href="/admin/volunteers/<%= v._id %>" class="btn btn-outline btn-sm">View Details</a>
+                <% if (!v.isApproved) { %>
+                  <form method="POST" action="/admin/volunteers/<%= v._id %>/approve" class="inline-form">
+                    <button class="btn btn-primary btn-sm">Approve</button>
+                  </form>
+                  <form method="POST" action="/admin/volunteers/<%= v._id %>/reject" class="inline-form">
+                    <button class="btn btn-outline btn-sm">Reject</button>
+                  </form>
+                <% } else if (v.isActive) { %>
+                  <form method="POST" action="/admin/volunteers/<%= v._id %>/deactivate" class="inline-form">
+                    <button class="btn btn-outline btn-sm" onclick="return confirm('Deactivate this volunteer?')">Deactivate</button>
+                  </form>
+                <% } else { %>
+                  <form method="POST" action="/admin/volunteers/<%= v._id %>/reactivate" class="inline-form">
+                    <button class="btn btn-primary btn-sm">Reactivate</button>
+                  </form>
+                <% } %>
+              </div>
+            </div>
+
           </div>
         <% }) %>
       </div>
@@ -58,12 +142,185 @@
   <style>
     .list-page { padding: var(--space-xl) 0; }
     .filter-tabs { display: flex; gap: var(--space-xs); flex-wrap: wrap; margin-bottom: var(--space-lg); }
-    .filter-tab { padding: 0.4em 1em; border-radius: var(--radius-full); border: 1.5px solid var(--color-border); font-size: var(--fs-body-sm); font-weight: 600; color: var(--color-ink-soft); }
-    .filter-tab.active, .filter-tab:hover { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-tint); }
-    .donation-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-md); }
-    .row-actions { display: flex; gap: var(--space-sm); margin-top: var(--space-sm); }
+    .filter-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45em 1.1em;
+      border-radius: var(--radius-full);
+      border: 1.5px solid var(--color-border);
+      font-size: var(--fs-body-sm);
+      font-weight: 600;
+      color: var(--color-ink-soft);
+      text-decoration: none;
+      transition: all var(--transition-fast);
+    }
+    .filter-tab:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background: var(--color-primary-tint);
+    }
+    .filter-tab.active {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background: var(--color-primary-tint);
+      box-shadow: var(--shadow-sm);
+    }
+    .tab-badge {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      padding: 0.1em 0.5em;
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--color-ink);
+    }
+
+    .volunteer-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: var(--space-lg);
+    }
+
+    .volunteer-admin-card {
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      box-shadow: var(--shadow-sm);
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+    }
+    .volunteer-admin-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+    }
+    .card-available {
+      border-left: 4px solid #16a34a;
+    }
+    .card-busy {
+      border-left: 4px solid #ea580c;
+      background: linear-gradient(180deg, #ffffff 0%, #fffbf8 100%);
+    }
+
+    .volunteer-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-sm);
+    }
+    .volunteer-name-link {
+      text-decoration: none;
+      color: var(--color-ink);
+    }
+    .volunteer-name-link h3 {
+      margin: 0 0 0.2rem 0;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+    .volunteer-name-link:hover h3 {
+      color: var(--color-primary);
+    }
+    .contact-line {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      font-size: var(--fs-caption);
+      color: var(--color-ink-soft);
+    }
+    .header-badges {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.3rem;
+    }
+    .rating-badge {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #b45309;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2em 0.5em;
+      border-radius: var(--radius-full);
+    }
+
+    .schedule-details-box {
+      background: var(--color-surface-alt);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-md);
+      padding: var(--space-sm) var(--space-md);
+      font-size: var(--fs-body-sm);
+    }
+    .schedule-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: var(--space-sm);
+      margin-bottom: 0.25rem;
+    }
+    .schedule-row:last-child {
+      margin-bottom: 0;
+    }
+    .schedule-label {
+      color: var(--color-ink-soft);
+      font-size: 0.8rem;
+    }
+    .schedule-value {
+      color: var(--color-ink);
+      font-size: 0.82rem;
+      text-align: right;
+    }
+    .text-warning {
+      color: #c2410c !important;
+      font-weight: 700;
+    }
+    .text-success {
+      color: #15803d !important;
+      font-weight: 700;
+    }
+
+    .current-task-box {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: var(--radius-md);
+      padding: var(--space-sm) var(--space-md);
+    }
+    .current-task-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-xs);
+    }
+    .task-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #9a3412;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .volunteer-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-sm);
+      margin-top: auto;
+      padding-top: var(--space-sm);
+      border-top: 1px solid var(--color-border-subtle);
+    }
+    .task-count-text {
+      font-size: var(--fs-caption);
+      color: var(--color-ink-soft);
+    }
+    .row-actions {
+      display: flex;
+      gap: var(--space-xs);
+      flex-wrap: wrap;
+    }
   </style>
-  <% if (activeTab === 'pending') { %>
+
+  <% if (activeTab === 'pending' || activeTab === 'all') { %>
     <script>
       if (window.aadharSocket) {
         window.aadharSocket.on('volunteer:new', function () {
